@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tender Intelligence Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-bg: #f8f9fa;
+            --dark-text: #2c3e50;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1a2530 100%);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar {
+            background: linear-gradient(180deg, var(--primary-color) 0%, #1a2530 100%);
+            color: white;
+            height: calc(100vh - 56px);
+            position: fixed;
+            left: 0;
+            top: 56px;
+            width: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            min-height: calc(100vh - 56px);
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .tender-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .tender-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        }
+        
+        .tender-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1a2530 100%);
+            color: white;
+            padding: 15px;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+        
+        .tender-body {
+            padding: 20px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color) 0%, #27ae60 100%);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color) 0%, #f1c40f 100%);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #c0392b 100%);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .login-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        
+        .ai-response-box {
+            background: #f8f9fa;
+            border-left: 4px solid var(--secondary-color);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin: 10px 0;
+        }
+        
+        .category-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin: 2px;
+        }
+        
+        .pagination .page-link {
+            border-radius: 8px;
+            margin: 0 3px;
+        }
+        
+        .search-box {
+            position: relative;
+        }
+        
+        .search-box i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+        }
+        
+        .search-box input {
+            padding-left: 40px;
+        }
+        
+        .closing-soon {
+            background: linear-gradient(135deg, var(--danger-color) 0%, #c0392b 100%);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+        
+        .spinner-border {
+            width: 1rem;
+            height: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-line me-2"></i>Tender Intelligence
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showDashboard()"><i class="fas fa-home me-1"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showTenders()"><i class="fas fa-file-contract me-1"></i> Tenders</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showAIAssistant()"><i class="fas fa-robot me-1"></i> AI Assistant</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i> {{ session.username or 'Guest' }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Login to Tender Intelligence</h5>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Login</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div id="mainContent" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="p-3">
+                <h6 class="text-white mb-3"><i class="fas fa-tools me-2"></i>Quick Actions</h6>
+                <button class="btn btn-success w-100 mb-2" onclick="scrapeTenders()">
+                    <i class="fas fa-sync-alt me-2"></i>Refresh Tenders
+                </button>
+                <button class="btn btn-primary w-100 mb-2" onclick="exportTenders()">
+                    <i class="fas fa-download me-2"></i>Export Data
+                </button>
+                
+                <hr class="my-3 bg-light">
+                
+                <h6 class="text-white mb-3"><i class="fas fa-filter me-2"></i>Filters</h6>
+                <select class="form-select mb-2" id="categoryFilter" onchange="filterByCategory()">
+                    <option value="">All Categories</option>
+                    <option value="construction">Construction</option>
+                    <option value="supply">Supply</option>
+                    <option value="services">Services</option>
+                    <option value="consultancy">Consultancy</option>
+                </select>
+                
+                <hr class="my-3 bg-light">
+                
+                <h6 class="text-white mb-3"><i class="fas fa-clock me-2"></i>Expiring Soon</h6>
+                <div id="expiringSoonList" class="small">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard View -->
+        <div id="dashboardView" class="main-content">
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="dashboard-card text-center">
+                        <div class="stat-number" id="totalTenders">0</div>
+                        <div class="stat-label">Total Tenders</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card text-center">
+                        <div class="stat-number" id="expiringSoon">0</div>
+                        <div class="stat-label">Expiring Soon</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card text-center">
+                        <div class="stat-number" id="recentAdded">0</div>
+                        <div class="stat-label">Recently Added</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="dashboard-card text-center">
+                        <div class="stat-number" id="activeUsers">1</div>
+                        <div class="stat-label">Active Users</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="dashboard-card">
+                        <h5><i class="fas fa-chart-bar me-2"></i>Tender Distribution</h5>
+                        <canvas id="categoryChart" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" onclick="scrapeTenders()">
+                                <i class="fas fa-sync-alt me-2"></i>Refresh Data
+                            </button>
+                            <button class="btn btn-success" onclick="showAIAssistant()">
+                                <i class="fas fa-robot me-2"></i>AI Assistant
+                            </button>
+                            <button class="btn btn-warning" onclick="showTenders()">
+                                <i class="fas fa-file-contract me-2"></i>Browse Tenders
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tenders View -->
+        <div id="tendersView" class="main-content" style="display: none;">
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search tenders..." onkeyup="searchTenders()">
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <button class="btn btn-primary" onclick="scrapeTenders()">
+                        <i class="fas fa-sync-alt me-2"></i>Refresh
+                    </button>
+                </div>
+            </div>
+
+            <div id="tendersContainer">
+                <!-- Tenders will be loaded here -->
+            </div>
+
+            <nav aria-label="Tenders pagination">
+                <ul class="pagination justify-content-center" id="paginationContainer">
+                    <!-- Pagination will be loaded here -->
+                </ul>
+            </nav>
+        </div>
+
+        <!-- AI Assistant View -->
+        <div id="aiAssistantView" class="main-content" style="display: none;">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="dashboard-card">
+                        <h5><i class="fas fa-robot me-2"></i>AI Assistant</h5>
+                        <div class="mb-3">
+                            <label for="aiTenderSelect" class="form-label">Select Tender</label>
+                            <select class="form-select" id="aiTenderSelect">
+                                <option value="">Loading tenders...</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="aiActionSelect" class="form-label">Choose Action</label>
+                            <select class="form-select" id="aiActionSelect">
+                                <option value="draft_proposal">Draft Proposal</option>
+                                <option value="analyze_risk">Risk Analysis</option>
+                                <option value="generate_questions">Generate Questions</option>
+                                <option value="summarize">Summarize Tender</option>
+                                <option value="custom">Custom Prompt</option>
+                            </select>
+                        </div>
+                        <div class="mb-3" id="customPromptDiv" style="display: none;">
+                            <label for="customPrompt" class="form-label">Enter Custom Prompt</label>
+                            <textarea class="form-control" id="customPrompt" rows="3" placeholder="Ask anything about the selected tender..."></textarea>
+                        </div>
+                        <button class="btn btn-primary" onclick="runAIAction()" id="aiRunButton">
+                            <i class="fas fa-play me-2"></i>Run AI Analysis
+                        </button>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <h5><i class="fas fa-comments me-2"></i>AI Responses</h5>
+                        <div id="aiResponsesContainer">
+                            <p class="text-muted">No AI responses yet. Select a tender and run an analysis.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="dashboard-card">
+                        <h5><i class="fas fa-lightbulb me-2"></i>AI Features</h5>
+                        <div class="list-group">
+                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('draft_proposal')">
+                                <i class="fas fa-file-alt me-2 text-primary"></i>Draft Proposal
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('analyze_risk')">
+                                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Risk Analysis
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('generate_questions')">
+                                <i class="fas fa-question-circle me-2 text-info"></i>Generate Questions
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('summarize')">
+                                <i class="fas fa-align-left me-2 text-success"></i>Summarize Tender
+                            </a>
+                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('custom')">
+                                <i class="fas fa-comment-dots me-2 text-secondary"></i>Custom Analysis
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Global variables
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentTenders = [];
+        let categoryChart = null;
+
+        // Check authentication status
+        document.addEventListener('DOMContentLoaded', function() {
+            const isLoggedIn = localStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true') {
+                loadMainContent();
+            } else {
+                showLoginModal();
+            }
+        });
+
+        function showLoginModal() {
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+        }
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({username, password})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    localStorage.setItem('isLoggedIn', 'true');
+                    document.getElementById('loginModal').querySelector('.btn-close').click();
+                    loadMainContent();
+                } else {
+                    alert('Login failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Login error: ' + error.message);
+            });
+        });
+
+        function loadMainContent() {
+            document.getElementById('mainContent').style.display = 'block';
+            loadDashboardStats();
+            loadTenders(currentPage);
+            loadExpiringSoon();
+            loadAITenders();
+        }
+
+        function logout() {
+            fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                localStorage.removeItem('isLoggedIn');
+                window.location.reload();
+            });
+        }
+
+        // Dashboard functions
+        function loadDashboardStats() {
+            fetch('/api/dashboard_stats')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('totalTenders').textContent = data.total_tenders;
+                document.getElementById('expiringSoon').textContent = data.expiring_soon;
+                document.getElementById('recentAdded').textContent = data.recent_added;
+                
+                // Load chart data
+                loadCategoryChart(data.categories);
+            });
+        }
+
+        function loadCategoryChart(categories) {
+            const ctx = document.getElementById('categoryChart').getContext('2d');
+            
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+            
+            const labels = Object.keys(categories);
+            const values = Object.values(categories);
+            
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels.length > 0 ? labels : ['No Data'],
+                    datasets: [{
+                        data: values.length > 0 ? values : [1],
+                        backgroundColor: [
+                            '#3498db', '#e74c3c', '#2ecc71', '#f39c12', 
+                            '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        function loadExpiringSoon() {
+            fetch('/api/tenders?limit=5')
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('expiringSoonList');
+                container.innerHTML = '';
+                
+                data.tenders.forEach(tender => {
+                    if (tender.closing_date) {
+                        const now = new Date();
+                        const closingDate = new Date(tender.closing_date);
+                        const diffDays = Math.ceil((closingDate - now) / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays <= 7 && diffDays >= 0) {
+                            const div = document.createElement('div');
+                            div.className = 'mb-2';
+                            div.innerHTML = `
+                                <small>
+                                    <strong>${tender.title.substring(0, 50)}${tender.title.length > 50 ? '...' : ''}</strong><br>
+                                    <span class="text-muted">${tender.closing_date}</span>
+                                </small>
+                            `;
+                            container.appendChild(div);
+                        }
+                    }
+                });
+            });
+        }
+
+        // Tenders functions
+        function loadTenders(page = 1) {
+            const search = document.getElementById('searchInput')?.value || '';
+            const category = document.getElementById('categoryFilter')?.value || '';
+            
+            fetch(`/api/tenders?page=${page}&limit=10&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`)
+            .then(response => response.json())
+            .then(data => {
+                currentTenders = data.tenders;
+                totalPages = data.pages;
+                
+                const container = document.getElementById('tendersContainer');
+                container.innerHTML = '';
+                
+                if (data.tenders.length === 0) {
+                    container.innerHTML = '<div class="alert alert-info">No tenders found.</div>';
+                    document.getElementById('paginationContainer').innerHTML = '';
+                    return;
+                }
+                
+                data.tenders.forEach(tender => {
+                    const card = createTenderCard(tender);
+                    container.appendChild(card);
+                });
+                
+                renderPagination(data.page, data.pages);
+            });
+        }
+
+        function createTenderCard(tender) {
+            const card = document.createElement('div');
+            card.className = 'tender-card fade-in';
+            
+            const now = new Date();
+            const closingDate = new Date(tender.closing_date);
+            const diffDays = Math.ceil((closingDate - now) / (1000 * 60 * 60 * 24));
+            
+            let closingBadge = '';
+            if (diffDays <= 7 && diffDays >= 0) {
+                closingBadge = `<span class="closing-soon">Closes in ${diffDays} days</span>`;
+            } else if (diffDays < 0) {
+                closingBadge = `<span class="badge bg-secondary">Closed</span>`;
+            } else {
+                closingBadge = `<span class="badge bg-success">Active</span>`;
+            }
+            
+            card.innerHTML = `
+                <div class="tender-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">${tender.title}</h6>
+                        ${closingBadge}
+                    </div>
+                </div>
+                <div class="tender-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="mb-2"><strong>Organization:</strong> ${tender.organization}</p>
+                            <p class="mb-2"><strong>Department:</strong> ${tender.department || 'N/A'}</p>
+                            <p class="mb-2"><strong>Description:</strong> ${tender.description.substring(0, 150)}${tender.description.length > 150 ? '...' : ''}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-2">
+                                <strong>Published:</strong> ${tender.published_date || 'N/A'}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Closing:</strong> ${tender.closing_date || 'N/A'}
+                            </div>
+                            <div class="mb-2">
+                                <strong>Source:</strong> ${tender.source_portal.split('/')[2]}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn btn-sm btn-primary me-2" onclick="viewTender('${tender.tender_id}')">
+                            <i class="fas fa-eye me-1"></i>View Details
+                        </button>
+                        <button class="btn btn-sm btn-success me-2" onclick="runAIFeature('${tender.tender_id}', 'draft_proposal')">
+                            <i class="fas fa-file-alt me-1"></i>Draft Proposal
+                        </button>
+                        <button class="btn btn-sm btn-warning me-2" onclick="runAIFeature('${tender.tender_id}', 'analyze_risk')">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Risk Analysis
+                        </button>
+                        <a href="${tender.tender_url}" target="_blank" class="btn btn-sm btn-info">
+                            <i class="fas fa-external-link-alt me-1"></i>Original Link
+                        </a>
+                    </div>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        function viewTender(tenderId) {
+            // Show tender details in a modal
+            const tender = currentTenders.find(t => t.tender_id === tenderId);
+            if (tender) {
+                let modalHtml = `
+                    <div class="modal fade" id="tenderModal" tabindex="-1">
+                        <div class="modal-dialog modal-xl">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">${tender.title}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6>Organization</h6>
+                                            <p>${tender.organization}</p>
+                                            
+                                            <h6>Description</h6>
+                                            <p>${tender.description}</p>
+                                            
+                                            <h6>Department</h6>
+                                            <p>${tender.department || 'N/A'}</p>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <h6>Details</h6>
+                                            <p><strong>Published:</strong> ${tender.published_date || 'N/A'}</p>
+                                            <p><strong>Closing Date:</strong> ${tender.closing_date || 'N/A'}</p>
+                                            <p><strong>Status:</strong> ${tender.status}</p>
+                                            <p><strong>Source:</strong> ${tender.source_portal}</p>
+                                            <p><strong>Budget:</strong> ₹${tender.budget_amount || 'Not specified'}</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <h6>AI Actions</h6>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <button class="btn btn-sm btn-primary" onclick="runAIFeature('${tender.tender_id}', 'draft_proposal')">
+                                                <i class="fas fa-file-alt me-1"></i>Draft Proposal
+                                            </button>
+                                            <button class="btn btn-sm btn-success" onclick="runAIFeature('${tender.tender_id}', 'analyze_risk')">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Risk Analysis
+                                            </button>
+                                            <button class="btn btn-sm btn-info" onclick="runAIFeature('${tender.tender_id}', 'summarize')">
+                                                <i class="fas fa-align-left me-1"></i>Summarize
+                                            </button>
+                                            <button class="btn btn-sm btn-warning" onclick="runAIFeature('${tender.tender_id}', 'generate_questions')">
+                                                <i class="fas fa-question-circle me-1"></i>Questions
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <a href="${tender.tender_url}" target="_blank" class="btn btn-primary">
+                                        <i class="fas fa-external-link-alt me-1"></i>Visit Tender Page
+                                    </a>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if present
+                const existingModal = document.getElementById('tenderModal');
+                if (existingModal) {
+                    existingModal.remove();
+                }
+                
+                // Add new modal to body
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('tenderModal'));
+                modal.show();
+            }
+        }
+
+        function renderPagination(currentPage, totalPages) {
+            const container = document.getElementById('paginationContainer');
+            container.innerHTML = '';
+            
+            // Previous button
+            if (currentPage > 1) {
+                const prevLi = document.createElement('li');
+                prevLi.className = 'page-item';
+                prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadTenders(${currentPage - 1})">Previous</a>`;
+                container.appendChild(prevLi);
+            }
+            
+            // Page numbers
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                const li = document.createElement('li');
+                li.className = i === currentPage ? 'page-item active' : 'page-item';
+                li.innerHTML = `<a class="page-link" href="#" onclick="loadTenders(${i})">${i}</a>`;
+                container.appendChild(li);
+            }
+            
+            // Next button
+            if (currentPage < totalPages) {
+                const nextLi = document.createElement('li');
+                nextLi.className = 'page-item';
+                nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadTenders(${currentPage + 1})">Next</a>`;
+                container.appendChild(nextLi);
+            }
+        }
+
+        function searchTenders() {
+            loadTenders(1);
+        }
+
+        function filterByCategory() {
+            loadTenders(1);
+        }
+
+        // AI Assistant functions
+        function loadAITenders() {
+            fetch('/api/tenders?limit=100')
+            .then(response => response.json())
+            .then(data => {
+                const select = document.getElementById('aiTenderSelect');
+                select.innerHTML = '<option value="">Select a tender...</option>';
+                
+                data.tenders.forEach(tender => {
+                    const option = document.createElement('option');
+                    option.value = tender.tender_id;
+                    option.textContent = `${tender.title.substring(0, 50)}${tender.title.length > 50 ? '...' : ''}`;
+                    select.appendChild(option);
+                });
+            });
+        }
+
+        function setAIAction(action) {
+            document.getElementById('aiActionSelect').value = action;
+            toggleCustomPromptField();
+        }
+
+        function toggleCustomPromptField() {
+            const action = document.getElementById('aiActionSelect').value;
+            const customDiv = document.getElementById('customPromptDiv');
+            
+            if (action === 'custom') {
+                customDiv.style.display = 'block';
+            } else {
+                customDiv.style.display = 'none';
+            }
+        }
+
+        document.getElementById('aiActionSelect').addEventListener('change', toggleCustomPromptField);
+
+        function runAIAction() {
+            const tenderId = document.getElementById('aiTenderSelect').value;
+            const action = document.getElementById('aiActionSelect').value;
+            
+            if (!tenderId) {
+                alert('Please select a tender first.');
+                return;
+            }
+            
+            let endpoint = '';
+            let prompt = '';
+            
+            switch (action) {
+                case 'draft_proposal':
+                    endpoint = '/api/ai/draft_proposal';
+                    break;
+                case 'analyze_risk':
+                    endpoint = '/api/ai/analyze_risk';
+                    break;
+                case 'generate_questions':
+                    endpoint = '/api/ai/generate_questions';
+                    break;
+                case 'summarize':
+                    endpoint = '/api/ai/summarize_tender';
+                    break;
+                case 'custom':
+                    endpoint = '/api/ai/custom_prompt';
+                    prompt = document.getElementById('customPrompt').value;
+                    if (!prompt) {
+                        alert('Please enter a custom prompt.');
+                        return;
+                    }
+                    break;
+            }
+            
+            // Disable button and show loading
+            const button = document.getElementById('aiRunButton');
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
+            
+            fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tender_id: tenderId,
+                    prompt: prompt
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.response) {
+                    displayAIResponse(data.response, action);
+                } else {
+                    alert('Error: ' + (data.error || 'Unknown error occurred'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error processing AI request: ' + error.message);
+            })
+            .finally(() => {
+                // Re-enable button
+                button.disabled = false;
+                button.innerHTML = '<i class="fas fa-play me-2"></i>Run AI Analysis';
+            });
+        }
+
+        function displayAIResponse(response, actionType) {
+            const container = document.getElementById('aiResponsesContainer');
+            
+            const responseBox = document.createElement('div');
+            responseBox.className = 'ai-response-box mb-3 fade-in';
+            
+            const actionLabels = {
+                'draft_proposal': 'Proposal Draft',
+                'analyze_risk': 'Risk Analysis',
+                'generate_questions': 'Generated Questions',
+                'summarize': 'Summary',
+                'custom': 'Custom Analysis'
+            };
+            
+            responseBox.innerHTML = `
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <strong>${actionLabels[actionType] || 'AI Response'}</strong>
+                    <small class="text-muted">${new Date().toLocaleString()}</small>
+                </div>
+                <div class="response-content">${response.replace(/\n/g, '<br>')}</div>
+            `;
+            
+            container.insertBefore(responseBox, container.firstChild);
+        }
+
+        function runAIFeature(tenderId, feature) {
+            // Set the selected tender and action
+            document.getElementById('aiTenderSelect').value = tenderId;
+            document.getElementById('aiActionSelect').value = feature;
+            toggleCustomPromptField();
+            
+            // Switch to AI Assistant view and run the action
+            showAIAssistant();
+            runAIAction();
+        }
+
+        // Utility functions
+        function showDashboard() {
+            document.getElementById('dashboardView').style.display = 'block';
+            document.getElementById('tendersView').style.display = 'none';
+            document.getElementById('aiAssistantView').style.display = 'none';
+            loadDashboardStats();
+        }
+
+        function showTenders() {
+            document.getElementById('dashboardView').style.display = 'none';
+            document.getElementById('tendersView').style.display = 'block';
+            document.getElementById('aiAssistantView').style.display = 'none';
+            loadTenders(currentPage);
+        }
+
+        function showAIAssistant() {
+            document.getElementById('dashboardView').style.display = 'none';
+            document.getElementById('tendersView').style.display = 'none';
+            document.getElementById('aiAssistantView').style.display = 'block';
+            loadAITenders();
+        }
+
+        function scrapeTenders() {
+            if (confirm('Are you sure you want to refresh all tenders? This may take a few minutes.')) {
+                fetch('/api/scrape_tenders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert(data.message);
+                    if (data.success) {
+                        loadTenders(currentPage);
+                        loadDashboardStats();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error refreshing tenders: ' + error.message);
+                });
+            }
+        }
+
+        function exportTenders() {
+            // Create a temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = '/api/export_tenders';
+            link.download = 'tenders_export.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
