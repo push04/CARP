@@ -2,17 +2,13 @@ import os
 import json
 import requests
 from flask import Flask, render_template, request, jsonify, session
+from flask_cors import CORS
 from datetime import datetime, timedelta
 import sqlite3
 from threading import Thread
 import time
 from bs4 import BeautifulSoup
-try:
-    import openrouter
-    OPENROUTER_AVAILABLE = True
-except ImportError:
-    OPENROUTER_AVAILABLE = False
-    print("Warning: openrouter module not available. AI features will use mock responses.")
+import openai
 import logging
 from urllib.parse import urljoin, urlparse
 import re
@@ -20,9 +16,12 @@ import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 import hashlib
 from functools import wraps
+import pandas as pd
+from collections import defaultdict
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production')
+CORS(app)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +31,19 @@ logger = logging.getLogger(__name__)
 OPENROUTER_API_KEY = os.environ.get('OPENROUTER_API_KEY')
 if not OPENROUTER_API_KEY:
     logger.warning("OPENROUTER_API_KEY not found in environment variables")
+
+# OpenAI API Configuration for OpenRouter
+def get_openai_client():
+    """Initialize OpenAI client with OpenRouter configuration"""
+    if not OPENROUTER_API_KEY:
+        logger.error("OPENROUTER_API_KEY not configured")
+        return None
+    
+    client = openai.OpenAI(
+        api_key=OPENROUTER_API_KEY,
+        base_url="https://openrouter.ai/api/v1"
+    )
+    return client
 
 # Database setup
 def init_db():
@@ -364,7 +376,8 @@ def save_tenders_to_db(tenders):
 # AI functionality with OpenRouter
 def get_ai_response(prompt, model="openai/gpt-3.5-turbo"):
     """Get response from OpenRouter AI"""
-    if not OPENROUTER_AVAILABLE:
+    client = get_openai_client()
+    if not client:
         # Mock AI responses for testing purposes
         import random
         mock_responses = {
@@ -372,7 +385,9 @@ def get_ai_response(prompt, model="openai/gpt-3.5-turbo"):
             "risk": "This is a mock risk analysis. In a real implementation, this would analyze specific risks related to the tender.",
             "question": "This is a mock question generation. In a real implementation, this would generate relevant questions about the tender.",
             "summary": "This is a mock summary. In a real implementation, this would provide a concise summary of the tender.",
-            "default": "This is a mock AI response. The OpenRouter module is not available in this environment."
+            "draft": "This is a mock email draft. In a real implementation, this would contain a professionally drafted email for the tender opportunity.",
+            "match": "This is a mock supplier match analysis. In a real implementation, this would provide detailed analysis of how well a supplier matches the tender requirements.",
+            "default": "This is a mock AI response. The OpenAI/OpenRouter module is not properly configured in this environment."
         }
         
         if "proposal" in prompt.lower():
@@ -383,20 +398,26 @@ def get_ai_response(prompt, model="openai/gpt-3.5-turbo"):
             return mock_responses["question"]
         elif "summar" in prompt.lower():
             return mock_responses["summary"]
+        elif "draft" in prompt.lower() or "email" in prompt.lower():
+            return mock_responses["draft"]
+        elif "match" in prompt.lower() or "supplier" in prompt.lower():
+            return mock_responses["match"]
         else:
             return mock_responses["default"]
-    
-    if not OPENROUTER_API_KEY:
-        return "OpenRouter API key not configured"
-    
+
     try:
-        response = openrouter.chat.completions.create(
+        response = client.chat.completions.create(
             model=model,
-            messages=[{"role": "user", "content": prompt}]
+            messages=[
+                {"role": "system", "content": "You are an expert assistant specialized in tender analysis, proposal writing, risk assessment, and procurement processes. Provide accurate, professional, and helpful responses."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=1000,
+            temperature=0.7
         )
         return response.choices[0].message.content
     except Exception as e:
-        logger.error(f"OpenRouter API error: {str(e)}")
+        logger.error(f"OpenAI/OpenRouter API error: {str(e)}")
         return f"AI service error: {str(e)}"
 
 @app.route('/')
@@ -733,6 +754,10 @@ def dashboard_stats():
     c.execute("SELECT category, COUNT(*) FROM tenders WHERE status='active' GROUP BY category")
     category_counts = dict(c.fetchall())
     
+    # Tenders by department
+    c.execute("SELECT department, COUNT(*) FROM tenders WHERE status='active' GROUP BY department LIMIT 10")
+    department_counts = dict(c.fetchall())
+    
     # Tenders expiring soon (next 7 days)
     c.execute("""SELECT COUNT(*) FROM tenders 
                 WHERE status='active' 
@@ -745,13 +770,29 @@ def dashboard_stats():
     c.execute("SELECT COUNT(*) FROM tenders WHERE created_at >= datetime('now', '-1 day')")
     recent_added = c.fetchone()[0]
     
+    # Top organizations
+    c.execute("SELECT organization, COUNT(*) FROM tenders WHERE status='active' GROUP BY organization ORDER BY COUNT(*) DESC LIMIT 5")
+    top_orgs = dict(c.fetchall())
+    
+    # Tenders by month (for trend analysis)
+    c.execute("""SELECT strftime('%Y-%m', created_at) as month, COUNT(*) 
+                FROM tenders 
+                WHERE status='active' 
+                GROUP BY month 
+                ORDER BY month DESC 
+                LIMIT 6""")
+    monthly_trends = dict(c.fetchall())
+    
     conn.close()
     
     return jsonify({
         'total_tenders': total_tenders,
         'categories': category_counts,
+        'departments': department_counts,
         'expiring_soon': expiring_soon,
-        'recently_added': recent_added
+        'recently_added': recent_added,
+        'top_organizations': top_orgs,
+        'monthly_trends': monthly_trends
     })
 
 @app.route('/api/export_tenders', methods=['GET'])
@@ -766,12 +807,179 @@ def export_tenders():
     # Convert to CSV format
     csv_content = "ID,Title,Organization,Category,Department,Published Date,Closing Date,Tender URL,Description,Budget Amount,Status,Source Portal,Created At\n"
     for tender in tenders:
-        csv_content += f"{tender[1]},{tender[2]},{tender[3]},{tender[4]},{tender[5]},{tender[6]},{tender[7]},{tender[8]},{tender[9]},{tender[10]},{tender[11]},{tender[12]},{tender[13]}\n"
+        # Escape quotes and handle commas in fields
+        escaped_fields = []
+        for field in tender[1:]:  # Skip the ID field (index 0) since we're using position-based access
+            if field is None:
+                escaped_fields.append('')
+            else:
+                field_str = str(field).replace('"', '""')  # Escape quotes
+                if ',' in field_str or '\n' in field_str or '"' in field_str:
+                    field_str = f'"{field_str}"'  # Wrap in quotes if it contains special characters
+                escaped_fields.append(field_str)
+        
+        csv_content += ','.join(escaped_fields) + '\n'
     
     return csv_content, 200, {
         'Content-Type': 'text/csv',
         'Content-Disposition': 'attachment; filename=tenders_export.csv'
     }
+
+@app.route('/api/ai/draft_email', methods=['POST'])
+@login_required
+def draft_email():
+    """Draft a professional email for tender inquiry/proposal submission"""
+    data = request.json
+    tender_id = data.get('tender_id')
+    email_type = data.get('type', 'inquiry')  # inquiry, proposal, follow_up
+    
+    # Get tender details
+    conn = sqlite3.connect('tenders.db')
+    c = conn.cursor()
+    c.execute("SELECT title, description, organization, closing_date FROM tenders WHERE tender_id=?", (tender_id,))
+    tender = c.fetchone()
+    conn.close()
+    
+    if not tender:
+        return jsonify({'error': 'Tender not found'})
+    
+    title, description, organization, closing_date = tender
+    
+    if email_type == 'inquiry':
+        prompt = f"""Draft a professional business inquiry email for the following tender opportunity:
+        
+        Tender Title: {title}
+        Organization: {organization}
+        Description: {description}
+        Closing Date: {closing_date}
+
+        The email should be formal, concise, express interest in the tender, request additional information if needed, and highlight our company's capabilities."""
+    elif email_type == 'proposal':
+        prompt = f"""Draft a professional proposal submission email for the following tender:
+        
+        Tender Title: {title}
+        Organization: {organization}
+        Description: {description}
+        Closing Date: {closing_date}
+
+        The email should acknowledge receipt of tender details, confirm our intention to submit a proposal, mention key strengths that match the requirements, and indicate next steps."""
+    elif email_type == 'follow_up':
+        prompt = f"""Draft a professional follow-up email regarding the following tender:
+        
+        Tender Title: {title}
+        Organization: {organization}
+        Description: {description}
+        Closing Date: {closing_date}
+
+        The email should politely inquire about the status, offer additional information if needed, and express continued interest in the opportunity."""
+    else:
+        prompt = f"""Draft a professional email regarding the following tender opportunity:
+        
+        Tender Title: {title}
+        Organization: {organization}
+        Description: {description}
+        Closing Date: {closing_date}
+
+        The email should be appropriate for business development purposes."""
+
+    response = get_ai_response(prompt)
+    
+    # Save AI response
+    conn = sqlite3.connect('tenders.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO ai_responses (tender_id, prompt_type, response) VALUES (?, ?, ?)",
+              (tender_id, f'email_draft_{email_type}', response))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'response': response})
+
+@app.route('/api/ai/match_analysis', methods=['POST'])
+@login_required
+def match_analysis():
+    """Analyze how well a supplier matches a tender requirement"""
+    data = request.json
+    tender_id = data.get('tender_id')
+    supplier_profile = data.get('supplier_profile', '')
+    
+    # Get tender details
+    conn = sqlite3.connect('tenders.db')
+    c = conn.cursor()
+    c.execute("SELECT title, description, organization FROM tenders WHERE tender_id=?", (tender_id,))
+    tender = c.fetchone()
+    conn.close()
+    
+    if not tender:
+        return jsonify({'error': 'Tender not found'})
+    
+    title, description, organization = tender
+    
+    prompt = f"""Perform a detailed supplier-tender matching analysis:
+
+    TENDER INFORMATION:
+    Title: {title}
+    Organization: {organization}
+    Description: {description}
+
+    SUPPLIER PROFILE:
+    {supplier_profile}
+
+    Please provide:
+    1. Compatibility Score (0-100)
+    2. Key Strengths (where supplier matches well)
+    3. Potential Gaps (areas where supplier might need improvement)
+    4. Recommendation (pursue/not pursue with justification)
+    5. Action Items (specific steps to improve chances)"""
+
+    response = get_ai_response(prompt)
+    
+    # Save AI response
+    conn = sqlite3.connect('tenders.db')
+    c = conn.cursor()
+    c.execute("INSERT INTO ai_responses (tender_id, prompt_type, response) VALUES (?, ?, ?)",
+              (tender_id, 'match_analysis', response))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'response': response})
+
+@app.route('/api/ai/market_insights', methods=['GET'])
+@login_required
+def market_insights():
+    """Generate market insights from all tenders in the database"""
+    conn = sqlite3.connect('tenders.db')
+    c = conn.cursor()
+    
+    # Get all tenders for analysis
+    c.execute("SELECT title, description, organization, category, department, source_portal FROM tenders WHERE status='active' ORDER BY created_at DESC LIMIT 100")
+    tenders = c.fetchall()
+    conn.close()
+    
+    if not tenders:
+        return jsonify({'insights': 'No tenders available for analysis'})
+    
+    # Prepare data for AI analysis
+    tender_summaries = []
+    for tender in tenders:
+        summary = f"Title: {tender[0]}, Category: {tender[2]}, Department: {tender[3]}, Organization: {tender[2]}"
+        tender_summaries.append(summary)
+    
+    tender_data = "\n".join(tender_summaries[:20])  # Limit to first 20 for performance
+    
+    prompt = f"""Analyze the following tender data for market insights:
+
+    {tender_data}
+
+    Please provide:
+    1. Market Trends (emerging areas, popular sectors)
+    2. Opportunity Hotspots (high-activity regions/sectors)
+    3. Competition Analysis (which areas seem highly competitive)
+    4. Seasonal Patterns (if any can be inferred)
+    5. Strategic Recommendations for businesses looking to enter these markets"""
+
+    response = get_ai_response(prompt)
+    
+    return jsonify({'insights': response})
 
 if __name__ == '__main__':
     init_db()
