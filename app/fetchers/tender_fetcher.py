@@ -615,25 +615,47 @@ class TenderFetcher:
     # Specific fetch methods for different portals
     def _fetch_from_gem(self, url):
         """Fetch from Government e-Marketplace (GEM)"""
-        # Implementation for GEM portal
         tenders = []
         try:
-            # GEM has an API we can use
-            api_url = "https://gem.gov.in/api/public/tenders"
-            response = self.session.get(api_url, timeout=self.timeout)
-            if response.status_code == 200:
-                data = response.json()
-                for item in data.get('data', []):
-                    if any(state in item.get('location', '').lower() for state in ['bihar', 'jharkhand']):
+            # GEM might have a different structure - let's try the public tender listing
+            response = self.session.get(url, timeout=self.timeout)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            # Look for tender listings on GEM portal
+            tender_elements = soup.find_all('div', class_='tender-item') or soup.find_all('tr', class_='tender-row')
+            
+            if not tender_elements:
+                # Try alternative selectors
+                tender_elements = soup.find_all('div', {'data-role': 'tender-item'}) or soup.find_all('li', class_='tender-list-item')
+            
+            for element in tender_elements:
+                title_elem = element.find(['h3', 'h4', 'a', 'td', 'div'])
+                if title_elem:
+                    title = title_elem.get_text(strip=True)
+                    link_elem = title_elem.find('a') if title_elem.name != 'a' else title_elem
+                    link = link_elem.get('href') if link_elem else None
+                    
+                    if link:
+                        source_url = urljoin(url, link)
                         tenders.append({
-                            'title': item.get('title', ''),
-                            'description': item.get('description', ''),
-                            'source_url': item.get('tender_url', ''),
+                            'title': title[:500],
+                            'description': element.get_text(strip=True)[:1000],
+                            'source_url': source_url,
                             'source_portal': 'GEM',
-                            'publish_date': datetime.strptime(item.get('publish_date', ''), '%Y-%m-%d') if item.get('publish_date') else None,
-                            'state': 'Bihar' if 'bihar' in item.get('location', '').lower() else 'Jharkhand',
+                            'state': 'Central',
                             'last_checked': datetime.utcnow()
                         })
+                    else:
+                        tenders.append({
+                            'title': title[:500],
+                            'description': element.get_text(strip=True)[:1000],
+                            'source_url': url,
+                            'source_portal': 'GEM',
+                            'state': 'Central',
+                            'last_checked': datetime.utcnow()
+                        })
+                        
         except Exception as e:
             logger.error(f"GEM fetch error: {str(e)}")
         return tenders
