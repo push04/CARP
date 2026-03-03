@@ -27,17 +27,20 @@ class AIAnalyzer:
         openai.api_key = self.api_key
         openai.base_url = "https://openrouter.ai/api/v1"
         
-        # Model to use (you can change this to any supported model on OpenRouter)
-        self.model = "openai/gpt-3.5-turbo"
-        
-        # Alternative models available on OpenRouter
+        # Free models available on OpenRouter as specified by user
         self.available_models = [
-            "openai/gpt-3.5-turbo",
-            "openai/gpt-4",
-            "anthropic/claude-3-haiku",
-            "google/gemini-pro",
-            "meta-llama/llama-2-70b-chat"
+            "arcee-ai/trinity-large-preview:free",
+            "nvidia/nemotron-3-nano-30b-a3b:free",
+            "qwen/qwen3-vl-235b-a22b-thinking",
+            "qwen/qwen3-235b-a22b-thinking-2507",
+            "qwen/qwen3-vl-30b-a3b-thinking",
+            "arcee-ai/trinity-mini:free",
+            "nvidia/nemotron-nano-9b-v2:free",
+            "nvidia/nemotron-nano-12b-v2-vl:free"
         ]
+        
+        # Use the first available free model
+        self.model = self.available_models[0]
 
     def analyze_tender_verification(self, tender: Tender) -> float:
         """
@@ -68,23 +71,35 @@ class AIAnalyzer:
             Return only a number between 0 and 100 representing the verification score.
             """
             
-            response = openai.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert tender verification analyst. Respond only with a number between 0 and 100."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=10,
-                temperature=0.1
-            )
+            # Try each model until one works
+            for model in self.available_models:
+                try:
+                    response = openai.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are an expert tender verification analyst. Respond only with a number between 0 and 100."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=10,
+                        temperature=0.1
+                    )
+                    
+                    score_text = response.choices[0].message.content.strip()
+                    score = float(score_text) if score_text.replace('.', '', 1).isdigit() else 50.0
+                    
+                    # Ensure score is within bounds
+                    score = max(0, min(100, score))
+                    
+                    # Update the current model to the one that worked
+                    self.model = model
+                    return score
+                except Exception as model_error:
+                    logger.warning(f"Model {model} failed, trying next: {str(model_error)}")
+                    continue
             
-            score_text = response.choices[0].message.content.strip()
-            score = float(score_text) if score_text.replace('.', '', 1).isdigit() else 50.0
-            
-            # Ensure score is within bounds
-            score = max(0, min(100, score))
-            
-            return score
+            # If all models fail, return default score
+            logger.error("All models failed for tender verification")
+            return 50.0
             
         except Exception as e:
             logger.error(f"Error analyzing tender verification: {str(e)}")
@@ -159,21 +174,31 @@ class AIAnalyzer:
             Return only a decimal number between 0 and 1 representing the similarity score.
             """
             
-            response = openai.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert in document similarity analysis. Respond only with a decimal number between 0 and 1."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=10,
-                temperature=0.1
-            )
+            # Try each model until one works
+            for model in self.available_models:
+                try:
+                    response = openai.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are an expert in document similarity analysis. Respond only with a decimal number between 0 and 1."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=10,
+                        temperature=0.1
+                    )
+                    
+                    similarity_text = response.choices[0].message.content.strip()
+                    similarity = float(similarity_text) if similarity_text.replace('.', '', 1).replace('-', '', 1).isdigit() else 0.0
+                    
+                    # Ensure similarity is within bounds
+                    return max(0.0, min(1.0, similarity))
+                except Exception as model_error:
+                    logger.warning(f"Model {model} failed for similarity calculation, trying next: {str(model_error)}")
+                    continue
             
-            similarity_text = response.choices[0].message.content.strip()
-            similarity = float(similarity_text) if similarity_text.replace('.', '', 1).replace('-', '', 1).isdigit() else 0.0
-            
-            # Ensure similarity is within bounds
-            return max(0.0, min(1.0, similarity))
+            # If all models fail, return default score
+            logger.error("All models failed for semantic similarity calculation")
+            return 0.0
             
         except Exception as e:
             logger.error(f"Error calculating semantic similarity: {str(e)}")
@@ -253,19 +278,42 @@ class AIAnalyzer:
             }}
             """
             
-            response = openai.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert procurement analyst. Respond only with a valid JSON object."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=500,
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
+            # Try each model until one works
+            for model in self.available_models:
+                try:
+                    response = openai.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are an expert procurement analyst. Respond only with a valid JSON object."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=500,
+                        temperature=0.3,
+                        response_format={"type": "json_object"}
+                    )
+                    
+                    result = json.loads(response.choices[0].message.content)
+                    
+                    # Update the current model to the one that worked
+                    self.model = model
+                    return result
+                except Exception as model_error:
+                    logger.warning(f"Model {model} failed for supplier match analysis, trying next: {str(model_error)}")
+                    continue
             
-            result = json.loads(response.choices[0].message.content)
-            return result
+            # If all models fail, return default analysis
+            logger.error("All models failed for supplier match analysis")
+            return {
+                "match_score": 50,
+                "relevance_reasons": ["Default analysis due to AI error"],
+                "missing_capabilities": ["Full analysis unavailable"],
+                "estimated_price_range": {
+                    "min": 0,
+                    "max": 0,
+                    "currency": "INR"
+                },
+                "confidence_level": "low"
+            }
             
         except Exception as e:
             logger.error(f"Error analyzing supplier match: {str(e)}")
@@ -307,17 +355,43 @@ class AIAnalyzer:
             Return only the email content.
             """
             
-            response = openai.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are a professional business communication assistant. Return only the email content."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=800,
-                temperature=0.5
-            )
+            # Try each model until one works
+            for model in self.available_models:
+                try:
+                    response = openai.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are a professional business communication assistant. Return only the email content."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=800,
+                        temperature=0.5
+                    )
+                    
+                    # Update the current model to the one that worked
+                    self.model = model
+                    return response.choices[0].message.content.strip()
+                except Exception as model_error:
+                    logger.warning(f"Model {model} failed for email drafting, trying next: {str(model_error)}")
+                    continue
             
-            return response.choices[0].message.content.strip()
+            # If all models fail, return default email
+            logger.error("All models failed for email drafting")
+            return f"""Subject: Tender Opportunity: {tender.title}
+
+Dear {supplier_name},
+
+We have identified a potential tender opportunity that may align with your capabilities:
+
+Tender: {tender.title}
+Description: {tender.description}
+Deadline: {tender.deadline_date}
+Location: {tender.location}
+
+Please let us know if you're interested in exploring this opportunity.
+
+Best regards,
+CARP BIOTECH PRIVATE LIMITED"""
             
         except Exception as e:
             logger.error(f"Error drafting supplier email: {str(e)}")
@@ -357,19 +431,37 @@ CARP BIOTECH PRIVATE LIMITED"""
             }}
             """
             
-            response = openai.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": "You are an expert tender categorization specialist. Respond only with a valid JSON object."},
-                    {"role": "user", "content": prompt}
-                ],
-                max_tokens=300,
-                temperature=0.3,
-                response_format={"type": "json_object"}
-            )
+            # Try each model until one works
+            for model in self.available_models:
+                try:
+                    response = openai.chat.completions.create(
+                        model=model,
+                        messages=[
+                            {"role": "system", "content": "You are an expert tender categorization specialist. Respond only with a valid JSON object."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        max_tokens=300,
+                        temperature=0.3,
+                        response_format={"type": "json_object"}
+                    )
+                    
+                    result = json.loads(response.choices[0].message.content)
+                    
+                    # Update the current model to the one that worked
+                    self.model = model
+                    return result
+                except Exception as model_error:
+                    logger.warning(f"Model {model} failed for tender categorization, trying next: {str(model_error)}")
+                    continue
             
-            result = json.loads(response.choices[0].message.content)
-            return result
+            # If all models fail, return default categorization
+            logger.error("All models failed for tender categorization")
+            return {
+                "primary_category": "Services",
+                "sub_category": "General",
+                "keywords": ["procurement", "general"],
+                "estimated_value_range": "Medium"
+            }
             
         except Exception as e:
             logger.error(f"Error categorizing tender: {str(e)}")
