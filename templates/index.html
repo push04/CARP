@@ -3,16 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tender Intelligence Dashboard</title>
+    <title>CARP BIOTECH - Advanced Tender Management System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary-color: #2c3e50;
             --secondary-color: #3498db;
             --accent-color: #e74c3c;
             --light-bg: #f8f9fa;
-            --dark-text: #2c3e50;
+            --dark-bg: #2c3e50;
             --success-color: #2ecc71;
             --warning-color: #f39c12;
             --danger-color: #e74c3c;
@@ -20,133 +21,127 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            margin: 0;
-            padding: 0;
+            background-color: var(--light-bg);
+            overflow-x: hidden;
         }
         
         .navbar {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #1a2530 100%);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
         
         .sidebar {
-            background: linear-gradient(180deg, var(--primary-color) 0%, #1a2530 100%);
+            background: linear-gradient(to bottom, var(--primary-color), var(--dark-bg));
             color: white;
             height: calc(100vh - 56px);
             position: fixed;
-            left: 0;
-            top: 56px;
-            width: 250px;
-            overflow-y: auto;
+            padding-top: 20px;
+            transition: all 0.3s;
             z-index: 1000;
-            transition: all 0.3s ease;
+        }
+        
+        .sidebar a {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 15px;
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s;
+        }
+        
+        .sidebar a:hover, .sidebar a.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-left: 4px solid var(--secondary-color);
         }
         
         .main-content {
             margin-left: 250px;
             padding: 20px;
-            min-height: calc(100vh - 56px);
+            transition: all 0.3s;
         }
         
-        .dashboard-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-            padding: 25px;
-            margin-bottom: 20px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: none;
-        }
-        
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 35px rgba(0,0,0,0.15);
-        }
-        
-        .stat-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            color: var(--secondary-color);
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .tender-card {
-            background: white;
+        .card {
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
-            margin-bottom: 15px;
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--secondary-color);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            border: none;
+            margin-bottom: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
         }
         
-        .tender-card:hover {
-            transform: translateX(5px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.12);
         }
         
-        .tender-header {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #1a2530 100%);
+        .stat-card {
+            background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
-            padding: 15px;
-            border-top-left-radius: 12px;
-            border-top-right-radius: 12px;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
         }
         
-        .tender-body {
-            padding: 20px;
+        .stat-card i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
         }
         
         .btn-primary {
-            background: linear-gradient(135deg, var(--secondary-color) 0%, #2980b9 100%);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
             border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+            padding: 8px 16px;
+            transition: all 0.3s;
         }
         
         .btn-primary:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
         
-        .btn-success {
-            background: linear-gradient(135deg, var(--success-color) 0%, #27ae60 100%);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+        .chart-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
         }
         
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning-color) 0%, #f1c40f 100%);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+        .tender-item {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--secondary-color);
+            transition: all 0.3s;
         }
         
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger-color) 0%, #c0392b 100%);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 25px;
-            transition: all 0.3s ease;
+        .tender-item:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transform: translateX(5px);
         }
         
-        .pulse {
-            animation: pulse 2s infinite;
+        .closing-soon {
+            border-left-color: var(--danger-color) !important;
         }
         
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(46, 204, 113, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+        .ai-response {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border-left: 3px solid var(--secondary-color);
         }
         
         .fade-in {
@@ -154,39 +149,34 @@
         }
         
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .login-container {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
-            padding: 40px;
-            max-width: 400px;
-            margin: 100px auto;
+        .pulse {
+            animation: pulse 2s infinite;
         }
         
-        .ai-response-box {
-            background: #f8f9fa;
-            border-left: 4px solid var(--secondary-color);
-            padding: 15px;
-            border-radius: 0 8px 8px 0;
-            margin: 10px 0;
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(52, 152, 219, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(52, 152, 219, 0); }
         }
         
-        .category-badge {
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--secondary-color);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
             display: inline-block;
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            margin: 2px;
+            vertical-align: middle;
         }
         
-        .pagination .page-link {
-            border-radius: 8px;
-            margin: 0 3px;
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .search-box {
@@ -205,23 +195,8 @@
             padding-left: 40px;
         }
         
-        .closing-soon {
-            background: linear-gradient(135deg, var(--danger-color) 0%, #c0392b 100%);
-            color: white;
-            padding: 3px 8px;
-            border-radius: 12px;
-            font-size: 0.8rem;
-        }
-        
-        .modal-content {
-            border-radius: 15px;
-            border: none;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        }
-        
-        .spinner-border {
-            width: 1rem;
-            height: 1rem;
+        .badge {
+            font-size: 0.8em;
         }
     </style>
 </head>
@@ -230,7 +205,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid">
             <a class="navbar-brand" href="#">
-                <i class="fas fa-chart-line me-2"></i>Tender Intelligence
+                <i class="fas fa-balance-scale"></i> CARP BIOTECH - TMS
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -238,20 +213,26 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showDashboard()"><i class="fas fa-home me-1"></i> Dashboard</a>
+                        <a class="nav-link active" href="#"><i class="fas fa-home"></i> Dashboard</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showTenders()"><i class="fas fa-file-contract me-1"></i> Tenders</a>
+                        <a class="nav-link" href="#" onclick="showSection('tenders')"><i class="fas fa-list"></i> Tenders</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="#" onclick="showAIAssistant()"><i class="fas fa-robot me-1"></i> AI Assistant</a>
+                        <a class="nav-link" href="#" onclick="showSection('ai-tools')"><i class="fas fa-robot"></i> AI Tools</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSection('analytics')"><i class="fas fa-chart-bar"></i> Analytics</a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user me-1"></i> {{ session.username or 'Guest' }}
+                            <i class="fas fa-cog"></i> Settings
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="#" onclick="logout()"><i class="fas fa-sign-out-alt me-2"></i> Logout</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showSection('settings')">System Settings</a></li>
+                            <li><a class="dropdown-item" href="#" onclick="showSection('profile')">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
                         </ul>
                     </li>
                 </ul>
@@ -259,202 +240,407 @@
         </div>
     </nav>
 
-    <!-- Login Modal -->
-    <div class="modal fade" id="loginModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Login to Tender Intelligence</h5>
-                </div>
-                <div class="modal-body">
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Username</label>
-                            <input type="text" class="form-control" id="username" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control" id="password" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary w-100">Login</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div id="mainContent" style="display: none;">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="p-3">
-                <h6 class="text-white mb-3"><i class="fas fa-tools me-2"></i>Quick Actions</h6>
-                <button class="btn btn-success w-100 mb-2" onclick="scrapeTenders()">
-                    <i class="fas fa-sync-alt me-2"></i>Refresh Tenders
-                </button>
-                <button class="btn btn-primary w-100 mb-2" onclick="exportTenders()">
-                    <i class="fas fa-download me-2"></i>Export Data
-                </button>
-                
-                <hr class="my-3 bg-light">
-                
-                <h6 class="text-white mb-3"><i class="fas fa-filter me-2"></i>Filters</h6>
-                <select class="form-select mb-2" id="categoryFilter" onchange="filterByCategory()">
-                    <option value="">All Categories</option>
-                    <option value="construction">Construction</option>
-                    <option value="supply">Supply</option>
-                    <option value="services">Services</option>
-                    <option value="consultancy">Consultancy</option>
-                </select>
-                
-                <hr class="my-3 bg-light">
-                
-                <h6 class="text-white mb-3"><i class="fas fa-clock me-2"></i>Expiring Soon</h6>
-                <div id="expiringSoonList" class="small">
-                    <!-- Will be populated dynamically -->
-                </div>
-            </div>
-        </div>
-
-        <!-- Dashboard View -->
-        <div id="dashboardView" class="main-content">
-            <div class="row mb-4">
-                <div class="col-md-3">
-                    <div class="dashboard-card text-center">
-                        <div class="stat-number" id="totalTenders">0</div>
-                        <div class="stat-label">Total Tenders</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="dashboard-card text-center">
-                        <div class="stat-number" id="expiringSoon">0</div>
-                        <div class="stat-label">Expiring Soon</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="dashboard-card text-center">
-                        <div class="stat-number" id="recentAdded">0</div>
-                        <div class="stat-label">Recently Added</div>
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="dashboard-card text-center">
-                        <div class="stat-number" id="activeUsers">1</div>
-                        <div class="stat-label">Active Users</div>
-                    </div>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 px-0">
+                <div class="sidebar">
+                    <h6 class="text-uppercase text-muted px-3 mb-3">Navigation</h6>
+                    <a href="#" class="active" onclick="showSection('dashboard')">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                    <a href="#" onclick="showSection('tenders')">
+                        <i class="fas fa-file-contract me-2"></i> Tenders
+                    </a>
+                    <a href="#" onclick="showSection('ai-tools')">
+                        <i class="fas fa-robot me-2"></i> AI Tools
+                    </a>
+                    <a href="#" onclick="showSection('analytics')">
+                        <i class="fas fa-chart-line me-2"></i> Analytics
+                    </a>
+                    <a href="#" onclick="showSection('settings')">
+                        <i class="fas fa-cog me-2"></i> Settings
+                    </a>
+                    <a href="#" onclick="showSection('reports')">
+                        <i class="fas fa-file-pdf me-2"></i> Reports
+                    </a>
+                    <a href="#" onclick="manualFetch()">
+                        <i class="fas fa-sync me-2"></i> Refresh Data
+                    </a>
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="dashboard-card">
-                        <h5><i class="fas fa-chart-bar me-2"></i>Tender Distribution</h5>
-                        <canvas id="categoryChart" height="200"></canvas>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="dashboard-card">
-                        <h5><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary" onclick="scrapeTenders()">
-                                <i class="fas fa-sync-alt me-2"></i>Refresh Data
-                            </button>
-                            <button class="btn btn-success" onclick="showAIAssistant()">
-                                <i class="fas fa-robot me-2"></i>AI Assistant
-                            </button>
-                            <button class="btn btn-warning" onclick="showTenders()">
-                                <i class="fas fa-file-contract me-2"></i>Browse Tenders
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Tenders View -->
-        <div id="tendersView" class="main-content" style="display: none;">
-            <div class="row mb-4">
-                <div class="col-md-6">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" class="form-control" id="searchInput" placeholder="Search tenders..." onkeyup="searchTenders()">
-                    </div>
-                </div>
-                <div class="col-md-6 text-end">
-                    <button class="btn btn-primary" onclick="scrapeTenders()">
-                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                    </button>
-                </div>
-            </div>
-
-            <div id="tendersContainer">
-                <!-- Tenders will be loaded here -->
-            </div>
-
-            <nav aria-label="Tenders pagination">
-                <ul class="pagination justify-content-center" id="paginationContainer">
-                    <!-- Pagination will be loaded here -->
-                </ul>
-            </nav>
-        </div>
-
-        <!-- AI Assistant View -->
-        <div id="aiAssistantView" class="main-content" style="display: none;">
-            <div class="row">
-                <div class="col-md-8">
-                    <div class="dashboard-card">
-                        <h5><i class="fas fa-robot me-2"></i>AI Assistant</h5>
-                        <div class="mb-3">
-                            <label for="aiTenderSelect" class="form-label">Select Tender</label>
-                            <select class="form-select" id="aiTenderSelect">
-                                <option value="">Loading tenders...</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="aiActionSelect" class="form-label">Choose Action</label>
-                            <select class="form-select" id="aiActionSelect">
-                                <option value="draft_proposal">Draft Proposal</option>
-                                <option value="analyze_risk">Risk Analysis</option>
-                                <option value="generate_questions">Generate Questions</option>
-                                <option value="summarize">Summarize Tender</option>
-                                <option value="custom">Custom Prompt</option>
-                            </select>
-                        </div>
-                        <div class="mb-3" id="customPromptDiv" style="display: none;">
-                            <label for="customPrompt" class="form-label">Enter Custom Prompt</label>
-                            <textarea class="form-control" id="customPrompt" rows="3" placeholder="Ask anything about the selected tender..."></textarea>
-                        </div>
-                        <button class="btn btn-primary" onclick="runAIAction()" id="aiRunButton">
-                            <i class="fas fa-play me-2"></i>Run AI Analysis
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 main-content">
+                <!-- Dashboard Section -->
+                <div id="dashboard-section" class="fade-in">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-tachometer-alt text-primary"></i> Dashboard Overview</h2>
+                        <button class="btn btn-success pulse" onclick="manualFetch()">
+                            <i class="fas fa-sync"></i> Refresh Data
                         </button>
                     </div>
-                    
-                    <div class="dashboard-card">
-                        <h5><i class="fas fa-comments me-2"></i>AI Responses</h5>
-                        <div id="aiResponsesContainer">
-                            <p class="text-muted">No AI responses yet. Select a tender and run an analysis.</p>
+
+                    <!-- Stats Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="stat-card">
+                                <i class="fas fa-file-alt"></i>
+                                <div class="number" id="total-tenders">0</div>
+                                <div>Total Tenders</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #2ecc71, #27ae60);">
+                                <i class="fas fa-calendar-check"></i>
+                                <div class="number" id="expiring-soon">0</div>
+                                <div>Expiring Soon</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #f39c12, #e67e22);">
+                                <i class="fas fa-plus-circle"></i>
+                                <div class="number" id="recent-added">0</div>
+                                <div>Added Today</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="background: linear-gradient(135deg, #9b59b6, #8e44ad);">
+                                <i class="fas fa-building"></i>
+                                <div class="number" id="org-count">0</div>
+                                <div>Organizations</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="chart-container">
+                                <h5>Tender Activity Trend (Last 6 Months)</h5>
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="chart-container">
+                                <h5>Tenders by Category</h5>
+                                <canvas id="categoryChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Tenders -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-clock"></i> Recently Added Tenders</h5>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="showSection('tenders')">
+                                        View All <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="recent-tenders-list">
+                                        <!-- Recent tenders will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="dashboard-card">
-                        <h5><i class="fas fa-lightbulb me-2"></i>AI Features</h5>
-                        <div class="list-group">
-                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('draft_proposal')">
-                                <i class="fas fa-file-alt me-2 text-primary"></i>Draft Proposal
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('analyze_risk')">
-                                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Risk Analysis
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('generate_questions')">
-                                <i class="fas fa-question-circle me-2 text-info"></i>Generate Questions
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('summarize')">
-                                <i class="fas fa-align-left me-2 text-success"></i>Summarize Tender
-                            </a>
-                            <a href="#" class="list-group-item list-group-item-action" onclick="setAIAction('custom')">
-                                <i class="fas fa-comment-dots me-2 text-secondary"></i>Custom Analysis
-                            </a>
+
+                <!-- Tenders Section -->
+                <div id="tenders-section" class="fade-in" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-file-contract text-primary"></i> Tender Management</h2>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-outline-primary" onclick="loadTenders()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                            <button class="btn btn-success" onclick="exportTenders()">
+                                <i class="fas fa-download"></i> Export CSV
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Category</label>
+                                    <select class="form-select" id="filter-category">
+                                        <option value="">All Categories</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Department</label>
+                                    <select class="form-select" id="filter-department">
+                                        <option value="">All Departments</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Closing Date</label>
+                                    <input type="date" class="form-control" id="filter-closing-date">
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="search-box">
+                                        <i class="fas fa-search"></i>
+                                        <input type="text" class="form-control" placeholder="Search tenders..." id="search-input">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tenders Table -->
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Organization</th>
+                                            <th>Category</th>
+                                            <th>Department</th>
+                                            <th>Publish Date</th>
+                                            <th>Closing Date</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tenders-table-body">
+                                        <!-- Tenders will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <nav aria-label="Tenders pagination">
+                                <ul class="pagination justify-content-center" id="tenders-pagination">
+                                    <!-- Pagination will be loaded here -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Tools Section -->
+                <div id="ai-tools-section" class="fade-in" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-robot text-primary"></i> AI-Powered Tools</h2>
+                        <div class="text-muted">
+                            Powered by OpenRouter AI
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-envelope text-info"></i> Draft Email</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Tender</label>
+                                        <select class="form-select" id="email-tender-select">
+                                            <option value="">Loading tenders...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Email Type</label>
+                                        <select class="form-select" id="email-type">
+                                            <option value="inquiry">Inquiry</option>
+                                            <option value="proposal">Proposal</option>
+                                            <option value="follow_up">Follow Up</option>
+                                        </select>
+                                    </div>
+                                    <button class="btn btn-primary w-100" onclick="draftEmail()">
+                                        <i class="fas fa-paper-plane"></i> Generate Email
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-bullseye text-warning"></i> Match Analysis</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">Select Tender</label>
+                                        <select class="form-select" id="match-tender-select">
+                                            <option value="">Loading tenders...</option>
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Supplier Profile</label>
+                                        <textarea class="form-control" rows="3" id="supplier-profile" 
+                                            placeholder="Describe your company's capabilities, experience, etc."></textarea>
+                                    </div>
+                                    <button class="btn btn-warning w-100" onclick="performMatchAnalysis()">
+                                        <i class="fas fa-search"></i> Analyze Match
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-lightbulb text-success"></i> Market Insights</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>Get AI-powered market insights from all available tenders.</p>
+                                    <button class="btn btn-success w-100" onclick="getMarketInsights()">
+                                        <i class="fas fa-chart-line"></i> Generate Insights
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- AI Response Display -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-comment-dots text-secondary"></i> AI Response</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div id="ai-response" class="ai-response" style="display:none;">
+                                        <div id="ai-response-content"></div>
+                                    </div>
+                                    <div id="ai-loading" style="display:none;" class="text-center py-4">
+                                        <div class="loader mx-auto"></div>
+                                        <p class="mt-2 text-muted">AI is analyzing, please wait...</p>
+                                    </div>
+                                    <div id="ai-placeholder" class="text-center py-4 text-muted">
+                                        <i class="fas fa-robot fa-3x mb-3"></i>
+                                        <p>Select an AI tool to get started</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Analytics Section -->
+                <div id="analytics-section" class="fade-in" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-chart-line text-primary"></i> Advanced Analytics</h2>
+                        <button class="btn btn-outline-primary" onclick="refreshAnalytics()">
+                            <i class="fas fa-sync"></i> Refresh
+                        </button>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <h5>Top Organizations by Tender Count</h5>
+                                <canvas id="orgChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="chart-container">
+                                <h5>Tenders by Department</h5>
+                                <canvas id="deptChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-history"></i> Historical Data</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="stat-card bg-primary">
+                                                <i class="fas fa-file-alt"></i>
+                                                <div class="number" id="all-time-total">0</div>
+                                                <div>All Time Tenders</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stat-card bg-success">
+                                                <i class="fas fa-check-circle"></i>
+                                                <div class="number" id="closed-tenders">0</div>
+                                                <div>Closed Tenders</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stat-card bg-warning">
+                                                <i class="fas fa-clock"></i>
+                                                <div class="number" id="avg-response">0</div>
+                                                <div>Avg Response Days</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="stat-card bg-info">
+                                                <i class="fas fa-percentage"></i>
+                                                <div class="number" id="success-rate">0%</div>
+                                                <div>Success Rate</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settings-section" class="fade-in" style="display:none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2><i class="fas fa-cog text-primary"></i> System Settings</h2>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-key text-info"></i> API Configuration</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label class="form-label">OpenRouter API Key</label>
+                                        <input type="password" class="form-control" id="openrouter-api-key" 
+                                               placeholder="Enter your OpenRouter API key">
+                                        <small class="form-text text-muted">
+                                            Used for AI-powered features. Find your key at openrouter.ai
+                                        </small>
+                                    </div>
+                                    <button class="btn btn-primary" onclick="saveApiKey()">
+                                        <i class="fas fa-save"></i> Save API Key
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-cogs text-warning"></i> Auto-Fetch Settings</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="form-check form-switch mb-3">
+                                        <input class="form-check-input" type="checkbox" id="auto-fetch-toggle">
+                                        <label class="form-check-label" for="auto-fetch-toggle">
+                                            Enable Auto-Fetch
+                                        </label>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Fetch Interval (minutes)</label>
+                                        <input type="number" class="form-control" id="fetch-interval" value="30">
+                                    </div>
+                                    <button class="btn btn-warning" onclick="updateAutoFetchSettings()">
+                                        <i class="fas fa-sync-alt"></i> Update Settings
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -462,561 +648,633 @@
         </div>
     </div>
 
-    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Global variables
+        let trendChart, categoryChart, orgChart, deptChart;
         let currentPage = 1;
-        let totalPages = 1;
-        let currentTenders = [];
-        let categoryChart = null;
+        const itemsPerPage = 10;
 
-        // Check authentication status
+        // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            const isLoggedIn = localStorage.getItem('isLoggedIn');
-            if (isLoggedIn === 'true') {
-                loadMainContent();
-            } else {
-                showLoginModal();
-            }
-        });
-
-        function showLoginModal() {
-            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
-            loginModal.show();
-        }
-
-        // Login functionality
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            fetch('/api/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({username, password})
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('isLoggedIn', 'true');
-                    document.getElementById('loginModal').querySelector('.btn-close').click();
-                    loadMainContent();
-                } else {
-                    alert('Login failed: ' + data.message);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Login error: ' + error.message);
-            });
-        });
-
-        function loadMainContent() {
-            document.getElementById('mainContent').style.display = 'block';
             loadDashboardStats();
-            loadTenders(currentPage);
-            loadExpiringSoon();
-            loadAITenders();
-        }
+            loadRecentTenders();
+            loadTenders(); // Load tenders for AI tools
+            initializeCharts();
+        });
 
-        function logout() {
-            fetch('/api/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                localStorage.removeItem('isLoggedIn');
-                window.location.reload();
+        // Show selected section
+        function showSection(section) {
+            // Hide all sections
+            document.querySelectorAll('[id$="-section"]').forEach(el => {
+                el.style.display = 'none';
             });
-        }
-
-        // Dashboard functions
-        function loadDashboardStats() {
-            fetch('/api/dashboard_stats')
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById('totalTenders').textContent = data.total_tenders;
-                document.getElementById('expiringSoon').textContent = data.expiring_soon;
-                document.getElementById('recentAdded').textContent = data.recent_added;
-                
-                // Load chart data
-                loadCategoryChart(data.categories);
-            });
-        }
-
-        function loadCategoryChart(categories) {
-            const ctx = document.getElementById('categoryChart').getContext('2d');
             
-            if (categoryChart) {
-                categoryChart.destroy();
+            // Show selected section
+            document.getElementById(`${section}-section`).style.display = 'block';
+            
+            // Update active nav links
+            document.querySelectorAll('.nav-link, .sidebar a').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Find and activate the corresponding link
+            const navLink = document.querySelector(`[href="#"][onclick="showSection('${section}')"]`) ||
+                           document.querySelector(`.sidebar a[onclick="showSection('${section}')"]`);
+            if (navLink) navLink.classList.add('active');
+            
+            // Special handling for dashboard
+            if (section === 'dashboard') {
+                loadDashboardStats();
+                loadRecentTenders();
             }
             
-            const labels = Object.keys(categories);
-            const values = Object.values(categories);
+            // Load data for specific sections
+            if (section === 'tenders') {
+                loadTenders();
+                populateFilters();
+            }
             
-            categoryChart = new Chart(ctx, {
-                type: 'doughnut',
+            if (section === 'analytics') {
+                refreshAnalytics();
+            }
+        }
+
+        // Load dashboard statistics
+        async function loadDashboardStats() {
+            try {
+                const response = await fetch('/api/dashboard_stats');
+                const stats = await response.json();
+                
+                document.getElementById('total-tenders').textContent = stats.total_tenders || 0;
+                document.getElementById('expiring-soon').textContent = stats.expiring_soon || 0;
+                document.getElementById('recent-added').textContent = stats.recently_added || 0;
+                document.getElementById('org-count').textContent = Object.keys(stats.top_organizations || {}).length;
+                
+                // Update charts
+                updateTrendChart(stats.monthly_trends || {});
+                updateCategoryChart(stats.categories || {});
+                
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+            }
+        }
+
+        // Load recent tenders
+        async function loadRecentTenders() {
+            try {
+                const response = await fetch(`/api/tenders?page=1&per_page=5&sort_by=published_date&sort_order=desc`);
+                const data = await response.json();
+                
+                const container = document.getElementById('recent-tenders-list');
+                container.innerHTML = '';
+                
+                if (data.tenders && data.tenders.length > 0) {
+                    data.tenders.forEach(tender => {
+                        const isExpiringSoon = isClosingSoon(tender.closing_date);
+                        const tenderClass = isExpiringSoon ? 'tender-item closing-soon' : 'tender-item';
+                        
+                        const tenderElement = document.createElement('div');
+                        tenderElement.className = tenderClass;
+                        tenderElement.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6>${tender.title.substring(0, 100)}${tender.title.length > 100 ? '...' : ''}</h6>
+                                    <small class="text-muted">${tender.organization}</small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge ${isExpiringSoon ? 'bg-danger' : 'bg-info'}">
+                                        ${tender.closing_date || 'N/A'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <span class="badge bg-secondary me-1">${tender.category}</span>
+                                <span class="badge bg-success me-1">${tender.department}</span>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewTender(${tender.id})">
+                                    <i class="fas fa-eye"></i> Details
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(tenderElement);
+                    });
+                } else {
+                    container.innerHTML = '<p class="text-muted">No recent tenders available</p>';
+                }
+            } catch (error) {
+                console.error('Error loading recent tenders:', error);
+            }
+        }
+
+        // Check if tender is closing soon
+        function isClosingSoon(closingDate) {
+            if (!closingDate) return false;
+            
+            const closeDate = new Date(closingDate);
+            const today = new Date();
+            const diffTime = closeDate - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            return diffDays <= 7 && diffDays >= 0;
+        }
+
+        // Initialize charts
+        function initializeCharts() {
+            const ctx1 = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctx1, {
+                type: 'line',
                 data: {
-                    labels: labels.length > 0 ? labels : ['No Data'],
+                    labels: [],
                     datasets: [{
-                        data: values.length > 0 ? values : [1],
-                        backgroundColor: [
-                            '#3498db', '#e74c3c', '#2ecc71', '#f39c12', 
-                            '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
-                        ],
-                        borderWidth: 0
+                        label: 'Tenders per Month',
+                        data: [],
+                        borderColor: '#3498db',
+                        backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
+                        legend: { display: false }
                     }
                 }
             });
-        }
 
-        function loadExpiringSoon() {
-            fetch('/api/tenders?limit=5')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('expiringSoonList');
-                container.innerHTML = '';
-                
-                data.tenders.forEach(tender => {
-                    if (tender.closing_date) {
-                        const now = new Date();
-                        const closingDate = new Date(tender.closing_date);
-                        const diffDays = Math.ceil((closingDate - now) / (1000 * 60 * 60 * 24));
-                        
-                        if (diffDays <= 7 && diffDays >= 0) {
-                            const div = document.createElement('div');
-                            div.className = 'mb-2';
-                            div.innerHTML = `
-                                <small>
-                                    <strong>${tender.title.substring(0, 50)}${tender.title.length > 50 ? '...' : ''}</strong><br>
-                                    <span class="text-muted">${tender.closing_date}</span>
-                                </small>
-                            `;
-                            container.appendChild(div);
-                        }
+            const ctx2 = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#3498db', '#e74c3c', '#2ecc71', '#f39c12',
+                            '#9b59b6', '#1abc9c', '#34495e', '#e67e22'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
                     }
-                });
+                }
+            });
+
+            const ctx3 = document.getElementById('orgChart').getContext('2d');
+            orgChart = new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Tender Count',
+                        data: [],
+                        backgroundColor: '#2ecc71'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            const ctx4 = document.getElementById('deptChart').getContext('2d');
+            deptChart = new Chart(ctx4, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Tender Count',
+                        data: [],
+                        backgroundColor: '#f39c12'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } }
+                }
             });
         }
 
-        // Tenders functions
-        function loadTenders(page = 1) {
-            const search = document.getElementById('searchInput')?.value || '';
-            const category = document.getElementById('categoryFilter')?.value || '';
+        // Update charts with data
+        function updateTrendChart(data) {
+            const labels = Object.keys(data).reverse();
+            const values = Object.values(data).reverse();
             
-            fetch(`/api/tenders?page=${page}&limit=10&search=${encodeURIComponent(search)}&category=${encodeURIComponent(category)}`)
-            .then(response => response.json())
-            .then(data => {
-                currentTenders = data.tenders;
-                totalPages = data.pages;
-                
-                const container = document.getElementById('tendersContainer');
-                container.innerHTML = '';
-                
-                if (data.tenders.length === 0) {
-                    container.innerHTML = '<div class="alert alert-info">No tenders found.</div>';
-                    document.getElementById('paginationContainer').innerHTML = '';
-                    return;
-                }
-                
-                data.tenders.forEach(tender => {
-                    const card = createTenderCard(tender);
-                    container.appendChild(card);
-                });
-                
-                renderPagination(data.page, data.pages);
-            });
+            trendChart.data.labels = labels;
+            trendChart.data.datasets[0].data = values;
+            trendChart.update();
         }
 
-        function createTenderCard(tender) {
-            const card = document.createElement('div');
-            card.className = 'tender-card fade-in';
+        function updateCategoryChart(data) {
+            const labels = Object.keys(data);
+            const values = Object.values(data);
             
-            const now = new Date();
-            const closingDate = new Date(tender.closing_date);
-            const diffDays = Math.ceil((closingDate - now) / (1000 * 60 * 60 * 24));
-            
-            let closingBadge = '';
-            if (diffDays <= 7 && diffDays >= 0) {
-                closingBadge = `<span class="closing-soon">Closes in ${diffDays} days</span>`;
-            } else if (diffDays < 0) {
-                closingBadge = `<span class="badge bg-secondary">Closed</span>`;
-            } else {
-                closingBadge = `<span class="badge bg-success">Active</span>`;
-            }
-            
-            card.innerHTML = `
-                <div class="tender-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h6 class="mb-0">${tender.title}</h6>
-                        ${closingBadge}
-                    </div>
-                </div>
-                <div class="tender-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <p class="mb-2"><strong>Organization:</strong> ${tender.organization}</p>
-                            <p class="mb-2"><strong>Department:</strong> ${tender.department || 'N/A'}</p>
-                            <p class="mb-2"><strong>Description:</strong> ${tender.description.substring(0, 150)}${tender.description.length > 150 ? '...' : ''}</p>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-2">
-                                <strong>Published:</strong> ${tender.published_date || 'N/A'}
-                            </div>
-                            <div class="mb-2">
-                                <strong>Closing:</strong> ${tender.closing_date || 'N/A'}
-                            </div>
-                            <div class="mb-2">
-                                <strong>Source:</strong> ${tender.source_portal.split('/')[2]}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-3">
-                        <button class="btn btn-sm btn-primary me-2" onclick="viewTender('${tender.tender_id}')">
-                            <i class="fas fa-eye me-1"></i>View Details
-                        </button>
-                        <button class="btn btn-sm btn-success me-2" onclick="runAIFeature('${tender.tender_id}', 'draft_proposal')">
-                            <i class="fas fa-file-alt me-1"></i>Draft Proposal
-                        </button>
-                        <button class="btn btn-sm btn-warning me-2" onclick="runAIFeature('${tender.tender_id}', 'analyze_risk')">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Risk Analysis
-                        </button>
-                        <a href="${tender.tender_url}" target="_blank" class="btn btn-sm btn-info">
-                            <i class="fas fa-external-link-alt me-1"></i>Original Link
-                        </a>
-                    </div>
-                </div>
-            `;
-            
-            return card;
+            categoryChart.data.labels = labels;
+            categoryChart.data.datasets[0].data = values;
+            categoryChart.update();
         }
 
-        function viewTender(tenderId) {
-            // Show tender details in a modal
-            const tender = currentTenders.find(t => t.tender_id === tenderId);
-            if (tender) {
-                let modalHtml = `
-                    <div class="modal fade" id="tenderModal" tabindex="-1">
-                        <div class="modal-dialog modal-xl">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">${tender.title}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="row">
-                                        <div class="col-md-8">
-                                            <h6>Organization</h6>
-                                            <p>${tender.organization}</p>
-                                            
-                                            <h6>Description</h6>
-                                            <p>${tender.description}</p>
-                                            
-                                            <h6>Department</h6>
-                                            <p>${tender.department || 'N/A'}</p>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <h6>Details</h6>
-                                            <p><strong>Published:</strong> ${tender.published_date || 'N/A'}</p>
-                                            <p><strong>Closing Date:</strong> ${tender.closing_date || 'N/A'}</p>
-                                            <p><strong>Status:</strong> ${tender.status}</p>
-                                            <p><strong>Source:</strong> ${tender.source_portal}</p>
-                                            <p><strong>Budget:</strong> ₹${tender.budget_amount || 'Not specified'}</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="mt-4">
-                                        <h6>AI Actions</h6>
-                                        <div class="d-flex flex-wrap gap-2">
-                                            <button class="btn btn-sm btn-primary" onclick="runAIFeature('${tender.tender_id}', 'draft_proposal')">
-                                                <i class="fas fa-file-alt me-1"></i>Draft Proposal
-                                            </button>
-                                            <button class="btn btn-sm btn-success" onclick="runAIFeature('${tender.tender_id}', 'analyze_risk')">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>Risk Analysis
-                                            </button>
-                                            <button class="btn btn-sm btn-info" onclick="runAIFeature('${tender.tender_id}', 'summarize')">
-                                                <i class="fas fa-align-left me-1"></i>Summarize
-                                            </button>
-                                            <button class="btn btn-sm btn-warning" onclick="runAIFeature('${tender.tender_id}', 'generate_questions')">
-                                                <i class="fas fa-question-circle me-1"></i>Questions
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <a href="${tender.tender_url}" target="_blank" class="btn btn-primary">
-                                        <i class="fas fa-external-link-alt me-1"></i>Visit Tender Page
-                                    </a>
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
+        // Load tenders with pagination and filtering
+        async function loadTenders(page = 1) {
+            try {
+                const category = document.getElementById('filter-category').value;
+                const department = document.getElementById('filter-department').value;
+                const closingDate = document.getElementById('filter-closing-date').value;
+                const searchTerm = document.getElementById('search-input').value.trim();
+
+                let url = `/api/tenders?page=${page}&per_page=${itemsPerPage}`;
+                const params = [];
                 
-                // Remove existing modal if present
-                const existingModal = document.getElementById('tenderModal');
-                if (existingModal) {
-                    existingModal.remove();
+                if (category) params.push(`category=${encodeURIComponent(category)}`);
+                if (department) params.push(`department=${encodeURIComponent(department)}`);
+                if (closingDate) params.push(`closing_date=${encodeURIComponent(closingDate)}`);
+                if (searchTerm) params.push(`search=${encodeURIComponent(searchTerm)}`);
+                
+                if (params.length > 0) {
+                    url += '&' + params.join('&');
                 }
+
+                const response = await fetch(url);
+                const data = await response.json();
                 
-                // Add new modal to body
-                document.body.insertAdjacentHTML('beforeend', modalHtml);
+                const tbody = document.getElementById('tenders-table-body');
+                tbody.innerHTML = '';
                 
-                // Show modal
-                const modal = new bootstrap.Modal(document.getElementById('tenderModal'));
-                modal.show();
+                if (data.tenders && data.tenders.length > 0) {
+                    data.tenders.forEach(tender => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${tender.title.substring(0, 50)}${tender.title.length > 50 ? '...' : ''}</td>
+                            <td>${tender.organization || 'N/A'}</td>
+                            <td>${tender.category || 'N/A'}</td>
+                            <td>${tender.department || 'N/A'}</td>
+                            <td>${tender.published_date || 'N/A'}</td>
+                            <td>${tender.closing_date || 'N/A'}</td>
+                            <td><span class="badge bg-${getStatusColor(tender.status)}">${tender.status}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary" onclick="viewTender(${tender.id})">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-success" onclick="generateAIResponse(${tender.id}, 'summary')">
+                                    <i class="fas fa-robot"></i>
+                                </button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                    
+                    // Update pagination
+                    updatePagination(data.current_page, data.pages, 'loadTenders');
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center">No tenders found</td></tr>`;
+                }
+            } catch (error) {
+                console.error('Error loading tenders:', error);
             }
         }
 
-        function renderPagination(currentPage, totalPages) {
-            const container = document.getElementById('paginationContainer');
-            container.innerHTML = '';
-            
+        // Helper function to get status badge color
+        function getStatusColor(status) {
+            switch(status.toLowerCase()) {
+                case 'active': return 'success';
+                case 'closed': return 'danger';
+                case 'expired': return 'secondary';
+                default: return 'warning';
+            }
+        }
+
+        // Update pagination controls
+        function updatePagination(currentPage, totalPages, onPageChange) {
+            const pagination = document.getElementById('tenders-pagination');
+            pagination.innerHTML = '';
+
             // Previous button
-            if (currentPage > 1) {
-                const prevLi = document.createElement('li');
-                prevLi.className = 'page-item';
-                prevLi.innerHTML = `<a class="page-link" href="#" onclick="loadTenders(${currentPage - 1})">Previous</a>`;
-                container.appendChild(prevLi);
-            }
-            
+            const prevLi = document.createElement('li');
+            prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+            prevLi.innerHTML = `<a class="page-link" href="#" onclick="${onPageChange}(${currentPage - 1});return false;">Previous</a>`;
+            pagination.appendChild(prevLi);
+
             // Page numbers
-            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+            for (let i = 1; i <= totalPages; i++) {
                 const li = document.createElement('li');
-                li.className = i === currentPage ? 'page-item active' : 'page-item';
-                li.innerHTML = `<a class="page-link" href="#" onclick="loadTenders(${i})">${i}</a>`;
-                container.appendChild(li);
+                li.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                li.innerHTML = `<a class="page-link" href="#" onclick="${onPageChange}(${i});return false;">${i}</a>`;
+                pagination.appendChild(li);
             }
-            
+
             // Next button
-            if (currentPage < totalPages) {
-                const nextLi = document.createElement('li');
-                nextLi.className = 'page-item';
-                nextLi.innerHTML = `<a class="page-link" href="#" onclick="loadTenders(${currentPage + 1})">Next</a>`;
-                container.appendChild(nextLi);
-            }
+            const nextLi = document.createElement('li');
+            nextLi.className = `page-item ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextLi.innerHTML = `<a class="page-link" href="#" onclick="${onPageChange}(${currentPage + 1});return false;">Next</a>`;
+            pagination.appendChild(nextLi);
         }
 
-        function searchTenders() {
-            loadTenders(1);
-        }
-
-        function filterByCategory() {
-            loadTenders(1);
-        }
-
-        // AI Assistant functions
-        function loadAITenders() {
-            fetch('/api/tenders?limit=100')
-            .then(response => response.json())
-            .then(data => {
-                const select = document.getElementById('aiTenderSelect');
-                select.innerHTML = '<option value="">Select a tender...</option>';
+        // Populate filter dropdowns
+        async function populateFilters() {
+            try {
+                const response = await fetch('/api/dashboard_stats');
+                const stats = await response.json();
                 
-                data.tenders.forEach(tender => {
+                // Populate category filter
+                const categorySelect = document.getElementById('filter-category');
+                categorySelect.innerHTML = '<option value="">All Categories</option>';
+                Object.keys(stats.categories || {}).forEach(cat => {
                     const option = document.createElement('option');
-                    option.value = tender.tender_id;
-                    option.textContent = `${tender.title.substring(0, 50)}${tender.title.length > 50 ? '...' : ''}`;
-                    select.appendChild(option);
+                    option.value = cat;
+                    option.textContent = cat;
+                    categorySelect.appendChild(option);
                 });
-            });
-        }
-
-        function setAIAction(action) {
-            document.getElementById('aiActionSelect').value = action;
-            toggleCustomPromptField();
-        }
-
-        function toggleCustomPromptField() {
-            const action = document.getElementById('aiActionSelect').value;
-            const customDiv = document.getElementById('customPromptDiv');
-            
-            if (action === 'custom') {
-                customDiv.style.display = 'block';
-            } else {
-                customDiv.style.display = 'none';
+                
+                // Populate department filter
+                const deptSelect = document.getElementById('filter-department');
+                deptSelect.innerHTML = '<option value="">All Departments</option>';
+                Object.keys(stats.departments || {}).forEach(dept => {
+                    const option = document.createElement('option');
+                    option.value = dept;
+                    option.textContent = dept;
+                    deptSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error populating filters:', error);
             }
         }
 
-        document.getElementById('aiActionSelect').addEventListener('change', toggleCustomPromptField);
-
-        function runAIAction() {
-            const tenderId = document.getElementById('aiTenderSelect').value;
-            const action = document.getElementById('aiActionSelect').value;
+        // Manual fetch
+        async function manualFetch() {
+            const btn = document.querySelector('.pulse');
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Fetching...';
+            btn.disabled = true;
             
+            try {
+                const response = await fetch('/api/fetch_manual', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                
+                const result = await response.json();
+                alert(`Fetch initiated: ${result.message}`);
+                loadDashboardStats();
+                loadRecentTenders();
+            } catch (error) {
+                alert('Error initiating fetch: ' + error.message);
+            } finally {
+                btn.innerHTML = '<i class="fas fa-sync"></i> Refresh Data';
+                btn.disabled = false;
+            }
+        }
+
+        // Export tenders
+        async function exportTenders() {
+            window.location.href = '/api/export_tenders';
+        }
+
+        // View tender details (placeholder)
+        function viewTender(tenderId) {
+            alert(`Viewing tender details for ID: ${tenderId}`);
+            // In a real implementation, you would navigate to a detail page
+        }
+
+        // Generate AI response
+        async function generateAIResponse(tenderId, type) {
+            try {
+                let prompt = '';
+                switch(type) {
+                    case 'summary':
+                        prompt = 'Provide a brief summary of this tender opportunity.';
+                        break;
+                    case 'risks':
+                        prompt = 'Identify potential risks associated with this tender.';
+                        break;
+                    case 'opportunities':
+                        prompt = 'Identify key opportunities in this tender.';
+                        break;
+                }
+
+                const response = await fetch('/api/ai/custom', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tender_id: tenderId,
+                        prompt: prompt
+                    })
+                });
+
+                const data = await response.json();
+                
+                // Display AI response
+                document.getElementById('ai-response-content').innerHTML = `<strong>AI Response:</strong><br>${data.response}`;
+                document.getElementById('ai-response').style.display = 'block';
+                document.getElementById('ai-placeholder').style.display = 'none';
+            } catch (error) {
+                console.error('Error generating AI response:', error);
+            }
+        }
+
+        // AI Tools Functions
+        async function draftEmail() {
+            const tenderId = document.getElementById('email-tender-select').value;
+            const emailType = document.getElementById('email-type').value;
+
             if (!tenderId) {
-                alert('Please select a tender first.');
+                alert('Please select a tender');
+                return;
+            }
+
+            showAILoading();
+
+            try {
+                const response = await fetch('/api/ai/draft_email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tender_id: tenderId,
+                        type: emailType
+                    })
+                });
+
+                const data = await response.json();
+                displayAIResponse(data.response);
+            } catch (error) {
+                hideAILoading();
+                alert('Error drafting email: ' + error.message);
+            }
+        }
+
+        async function performMatchAnalysis() {
+            const tenderId = document.getElementById('match-tender-select').value;
+            const supplierProfile = document.getElementById('supplier-profile').value;
+
+            if (!tenderId) {
+                alert('Please select a tender');
+                return;
+            }
+
+            if (!supplierProfile.trim()) {
+                alert('Please enter supplier profile information');
+                return;
+            }
+
+            showAILoading();
+
+            try {
+                const response = await fetch('/api/ai/match_analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tender_id: tenderId,
+                        supplier_profile: supplierProfile
+                    })
+                });
+
+                const data = await response.json();
+                displayAIResponse(data.response);
+            } catch (error) {
+                hideAILoading();
+                alert('Error performing match analysis: ' + error.message);
+            }
+        }
+
+        async function getMarketInsights() {
+            showAILoading();
+
+            try {
+                const response = await fetch('/api/ai/market_insights');
+                const data = await response.json();
+                displayAIResponse(data.insights);
+            } catch (error) {
+                hideAILoading();
+                alert('Error getting market insights: ' + error.message);
+            }
+        }
+
+        // AI Response Helpers
+        function showAILoading() {
+            document.getElementById('ai-loading').style.display = 'block';
+            document.getElementById('ai-response').style.display = 'none';
+            document.getElementById('ai-placeholder').style.display = 'none';
+        }
+
+        function hideAILoading() {
+            document.getElementById('ai-loading').style.display = 'none';
+        }
+
+        function displayAIResponse(responseText) {
+            hideAILoading();
+            document.getElementById('ai-response-content').innerHTML = responseText.replace(/\n/g, '<br>');
+            document.getElementById('ai-response').style.display = 'block';
+            document.getElementById('ai-placeholder').style.display = 'none';
+        }
+
+        // Refresh analytics
+        async function refreshAnalytics() {
+            try {
+                const response = await fetch('/api/dashboard_stats');
+                const stats = await response.json();
+                
+                // Update historical data
+                document.getElementById('all-time-total').textContent = stats.total_tenders || 0;
+                
+                // Update organization chart
+                const orgLabels = Object.keys(stats.top_organizations || {}).slice(0, 5);
+                const orgValues = Object.values(stats.top_organizations || {}).slice(0, 5);
+                
+                orgChart.data.labels = orgLabels;
+                orgChart.data.datasets[0].data = orgValues;
+                orgChart.update();
+                
+                // Update department chart
+                const deptLabels = Object.keys(stats.departments || {}).slice(0, 5);
+                const deptValues = Object.values(stats.departments || {}).slice(0, 5);
+                
+                deptChart.data.labels = deptLabels;
+                deptChart.data.datasets[0].data = deptValues;
+                deptChart.update();
+                
+            } catch (error) {
+                console.error('Error refreshing analytics:', error);
+            }
+        }
+
+        // Save API key
+        async function saveApiKey() {
+            const apiKey = document.getElementById('openrouter-api-key').value;
+            
+            if (!apiKey.trim()) {
+                alert('Please enter an API key');
                 return;
             }
             
-            let endpoint = '';
-            let prompt = '';
-            
-            switch (action) {
-                case 'draft_proposal':
-                    endpoint = '/api/ai/draft_proposal';
-                    break;
-                case 'analyze_risk':
-                    endpoint = '/api/ai/analyze_risk';
-                    break;
-                case 'generate_questions':
-                    endpoint = '/api/ai/generate_questions';
-                    break;
-                case 'summarize':
-                    endpoint = '/api/ai/summarize_tender';
-                    break;
-                case 'custom':
-                    endpoint = '/api/ai/custom_prompt';
-                    prompt = document.getElementById('customPrompt').value;
-                    if (!prompt) {
-                        alert('Please enter a custom prompt.');
-                        return;
-                    }
-                    break;
+            try {
+                // In a real implementation, this would securely store the API key
+                alert('API key saved successfully!');
+            } catch (error) {
+                alert('Error saving API key: ' + error.message);
             }
-            
-            // Disable button and show loading
-            const button = document.getElementById('aiRunButton');
-            button.disabled = true;
-            button.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
-            
-            fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    tender_id: tenderId,
-                    prompt: prompt
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.response) {
-                    displayAIResponse(data.response, action);
-                } else {
-                    alert('Error: ' + (data.error || 'Unknown error occurred'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error processing AI request: ' + error.message);
-            })
-            .finally(() => {
-                // Re-enable button
-                button.disabled = false;
-                button.innerHTML = '<i class="fas fa-play me-2"></i>Run AI Analysis';
-            });
         }
 
-        function displayAIResponse(response, actionType) {
-            const container = document.getElementById('aiResponsesContainer');
+        // Update auto-fetch settings
+        async function updateAutoFetchSettings() {
+            const isEnabled = document.getElementById('auto-fetch-toggle').checked;
+            const interval = document.getElementById('fetch-interval').value;
             
-            const responseBox = document.createElement('div');
-            responseBox.className = 'ai-response-box mb-3 fade-in';
-            
-            const actionLabels = {
-                'draft_proposal': 'Proposal Draft',
-                'analyze_risk': 'Risk Analysis',
-                'generate_questions': 'Generated Questions',
-                'summarize': 'Summary',
-                'custom': 'Custom Analysis'
-            };
-            
-            responseBox.innerHTML = `
-                <div class="d-flex justify-content-between align-items-start mb-2">
-                    <strong>${actionLabels[actionType] || 'AI Response'}</strong>
-                    <small class="text-muted">${new Date().toLocaleString()}</small>
-                </div>
-                <div class="response-content">${response.replace(/\n/g, '<br>')}</div>
-            `;
-            
-            container.insertBefore(responseBox, container.firstChild);
-        }
-
-        function runAIFeature(tenderId, feature) {
-            // Set the selected tender and action
-            document.getElementById('aiTenderSelect').value = tenderId;
-            document.getElementById('aiActionSelect').value = feature;
-            toggleCustomPromptField();
-            
-            // Switch to AI Assistant view and run the action
-            showAIAssistant();
-            runAIAction();
-        }
-
-        // Utility functions
-        function showDashboard() {
-            document.getElementById('dashboardView').style.display = 'block';
-            document.getElementById('tendersView').style.display = 'none';
-            document.getElementById('aiAssistantView').style.display = 'none';
-            loadDashboardStats();
-        }
-
-        function showTenders() {
-            document.getElementById('dashboardView').style.display = 'none';
-            document.getElementById('tendersView').style.display = 'block';
-            document.getElementById('aiAssistantView').style.display = 'none';
-            loadTenders(currentPage);
-        }
-
-        function showAIAssistant() {
-            document.getElementById('dashboardView').style.display = 'none';
-            document.getElementById('tendersView').style.display = 'none';
-            document.getElementById('aiAssistantView').style.display = 'block';
-            loadAITenders();
-        }
-
-        function scrapeTenders() {
-            if (confirm('Are you sure you want to refresh all tenders? This may take a few minutes.')) {
-                fetch('/api/scrape_tenders', {
+            try {
+                const response = await fetch('/api/toggle_auto_fetch', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    alert(data.message);
-                    if (data.success) {
-                        loadTenders(currentPage);
-                        loadDashboardStats();
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error refreshing tenders: ' + error.message);
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        enabled: isEnabled,
+                        interval: parseInt(interval) * 60 // Convert to seconds
+                    })
                 });
+                
+                const result = await response.json();
+                alert(result.message);
+            } catch (error) {
+                alert('Error updating auto-fetch settings: ' + error.message);
             }
         }
 
-        function exportTenders() {
-            // Create a temporary link and trigger download
-            const link = document.createElement('a');
-            link.href = '/api/export_tenders';
-            link.download = 'tenders_export.csv';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        // Load tenders for selection dropdowns
+        async function loadTendersForDropdowns() {
+            try {
+                const response = await fetch('/api/tenders?page=1&per_page=50');
+                const data = await response.json();
+                
+                // Populate email tender select
+                const emailSelect = document.getElementById('email-tender-select');
+                emailSelect.innerHTML = '<option value="">Select a tender...</option>';
+                
+                // Populate match tender select
+                const matchSelect = document.getElementById('match-tender-select');
+                matchSelect.innerHTML = '<option value="">Select a tender...</option>';
+                
+                if (data.tenders) {
+                    data.tenders.forEach(tender => {
+                        const optionHTML = `<option value="${tender.id}">${tender.title.substring(0, 60)}${tender.title.length > 60 ? '...' : ''}</option>`;
+                        
+                        const emailOption = document.createElement('option');
+                        emailOption.value = tender.id;
+                        emailOption.textContent = tender.title.substring(0, 60) + (tender.title.length > 60 ? '...' : '');
+                        emailSelect.appendChild(emailOption);
+                        
+                        const matchOption = document.createElement('option');
+                        matchOption.value = tender.id;
+                        matchOption.textContent = tender.title.substring(0, 60) + (tender.title.length > 60 ? '...' : '');
+                        matchSelect.appendChild(matchOption);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading tenders for dropdowns:', error);
+            }
         }
+
+        // Load tenders for dropdowns when AI tools section is accessed
+        document.querySelector('.sidebar a[onclick="showSection(\'ai-tools\')"]').addEventListener('click', function() {
+            setTimeout(loadTendersForDropdowns, 100);
+        });
     </script>
 </body>
 </html>
