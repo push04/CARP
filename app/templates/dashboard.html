@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}Tender Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="totalTendersCount">{{ total_tenders }}</div>
+            <div class="stat-label">Total Tenders</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="openTendersCount">{{ open_tenders }}</div>
+            <div class="stat-label">Open Tenders</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="biharTendersCount">{{ bihar_tenders }}</div>
+            <div class="stat-label">Bihar Tenders</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card">
+            <div class="stat-number" id="jharkhandTendersCount">{{ jharkhand_tenders }}</div>
+            <div class="stat-label">Jharkhand Tenders</div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Controls</h5>
+                <div class="d-flex gap-2">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="autoFetchToggle">
+                        <label class="form-check-label" for="autoFetchToggle">
+                            Auto-Fetch <span id="autoFetchStatus" class="badge bg-secondary">OFF</span>
+                        </label>
+                    </div>
+                    <button class="btn btn-primary btn-sm" id="manualFetchBtn">
+                        <i class="fas fa-sync-alt me-1"></i> Manual Fetch
+                    </button>
+                    <button class="btn btn-success btn-sm" id="exportCsvBtn">
+                        <i class="fas fa-file-csv me-1"></i> Export CSV
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="exportPdfBtn">
+                        <i class="fas fa-file-pdf me-1"></i> Export Selected PDF
+                    </button>
+                    <button class="btn btn-warning btn-sm" id="deleteOldBtn">
+                        <i class="fas fa-trash me-1"></i> Delete Old
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <form id="filterForm" class="row g-3">
+                    <div class="col-md-2">
+                        <label for="stateFilter" class="form-label">State</label>
+                        <select class="form-select" name="state" id="stateFilter">
+                            <option value="">All States</option>
+                            <option value="Bihar">Bihar</option>
+                            <option value="Jharkhand">Jharkhand</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="categoryFilter" class="form-label">Category</label>
+                        <select class="form-select" name="category" id="categoryFilter">
+                            <option value="">All Categories</option>
+                            <option value="works">Works</option>
+                            <option value="goods">Goods</option>
+                            <option value="services">Services</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="statusFilter" class="form-label">Status</label>
+                        <select class="form-select" name="status" id="statusFilter">
+                            <option value="">All Status</option>
+                            <option value="open">Open</option>
+                            <option value="closed">Closed</option>
+                            <option value="extended">Extended</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="startDateFilter" class="form-label">From Date</label>
+                        <input type="date" class="form-control" name="start_date" id="startDateFilter">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="endDateFilter" class="form-label">To Date</label>
+                        <input type="date" class="form-control" name="end_date" id="endDateFilter">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="searchFilter" class="form-label">Search</label>
+                        <input type="text" class="form-control" name="search" id="searchFilter" placeholder="Title, Authority...">
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-1"></i> Apply Filters
+                        </button>
+                        <button type="reset" class="btn btn-secondary" onclick="resetFilters()">
+                            <i class="fas fa-times me-1"></i> Reset
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Tenders</h5>
+                <div>
+                    <span class="text-muted" id="resultsCount">Loading...</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="tendersTable">
+                        <thead>
+                            <tr>
+                                <th><input type="checkbox" id="selectAllTenders"></th>
+                                <th class="sortable" data-field="title">Title <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="issuing_authority">Authority <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="department">Department <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="category">Category <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="location">Location <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="state">State <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="publish_date">Published <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="deadline_date">Deadline <i class="fas fa-sort"></i></th>
+                                <th class="sortable text-end" data-field="tender_value">Value <i class="fas fa-sort"></i></th>
+                                <th class="sortable" data-field="status">Status <i class="fas fa-sort"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div id="resultsInfo" class="text-muted">
+                        Showing <span id="startRecord">0</span> to <span id="endRecord">0</span> of <span id="totalRecords">0</span> records
+                    </div>
+                    <nav id="paginationContainer">
+                        <!-- Pagination will be loaded via JavaScript -->
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Fetch Logs -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Fetch Operations</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm fetch-log-table">
+                        <thead>
+                            <tr>
+                                <th>Source</th>
+                                <th>Success</th>
+                                <th>Error</th>
+                                <th>Total</th>
+                                <th>Start Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in recent_logs %}
+                            <tr>
+                                <td>{{ log.source_portal }}</td>
+                                <td>{{ log.success_count }}</td>
+                                <td>{{ log.error_count }}</td>
+                                <td>{{ log.total_processed }}</td>
+                                <td>{{ log.start_time }}</td>
+                                <td>
+                                    {% if log.error_details %}
+                                        <span class="badge bg-warning">Error</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Success</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function resetFilters() {
+    document.getElementById('filterForm').reset();
+    currentFilters = {};
+    currentPage = 1;
+    loadTenders(currentPage, currentPerPage, currentFilters, currentSort);
+}
+</script>
+
+{% endblock %}

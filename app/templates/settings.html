@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">System Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="settingsForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0">API Keys</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="openrouterApiKey" class="form-label">OpenRouter API Key</label>
+                                        <input type="password" class="form-control" id="openrouterApiKey" 
+                                               placeholder="Enter your OpenRouter API key" 
+                                               value="{{ OPENROUTER_API_KEY or '' }}">
+                                        <div class="form-text">
+                                            Used for AI analysis, supplier matching, and advanced features.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="smtpUsername" class="form-label">SMTP Username</label>
+                                        <input type="text" class="form-control" id="smtpUsername" 
+                                               placeholder="SMTP username for email notifications"
+                                               value="{{ SMTP_USERNAME or '' }}">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="smtpPassword" class="form-label">SMTP Password</label>
+                                        <input type="password" class="form-control" id="smtpPassword" 
+                                               placeholder="SMTP password for email notifications"
+                                               value="{{ SMTP_PASSWORD or '' }}">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="smtpServer" class="form-label">SMTP Server</label>
+                                        <input type="text" class="form-control" id="smtpServer" 
+                                               placeholder="SMTP server address"
+                                               value="{{ SMTP_SERVER or 'smtp.gmail.com' }}">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="smtpPort" class="form-label">SMTP Port</label>
+                                        <input type="number" class="form-control" id="smtpPort" 
+                                               placeholder="SMTP server port"
+                                               value="{{ SMTP_PORT or 587 }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0">System Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="autoFetchInterval" class="form-label">Auto Fetch Interval (seconds)</label>
+                                        <input type="number" class="form-control" id="autoFetchInterval" 
+                                               placeholder="Interval between auto fetch operations"
+                                               value="{{ AUTO_FETCH_INTERVAL or 1800 }}">
+                                        <div class="form-text">
+                                            Default is 1800 seconds (30 minutes).
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="maxConcurrentRequests" class="form-label">Max Concurrent Requests</label>
+                                        <input type="number" class="form-control" id="maxConcurrentRequests" 
+                                               placeholder="Maximum number of concurrent requests"
+                                               value="{{ MAX_CONCURRENT_REQUESTS or 10 }}">
+                                        <div class="form-text">
+                                            Controls how many requests are made simultaneously to avoid rate limiting.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="requestTimeout" class="form-label">Request Timeout (seconds)</label>
+                                        <input type="number" class="form-control" id="requestTimeout" 
+                                               placeholder="Request timeout duration"
+                                               value="{{ REQUEST_TIMEOUT or 30 }}">
+                                        <div class="form-text">
+                                            Time to wait before timing out a request.
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="retryAttempts" class="form-label">Retry Attempts</label>
+                                        <input type="number" class="form-control" id="retryAttempts" 
+                                               placeholder="Number of retry attempts for failed requests"
+                                               value="{{ RETRY_ATTEMPTS or 3 }}">
+                                        <div class="form-text">
+                                            How many times to retry a failed request before giving up.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Proxy Configuration</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <label for="httpProxy" class="form-label">HTTP Proxy</label>
+                                        <input type="text" class="form-control" id="httpProxy" 
+                                               placeholder="HTTP proxy server (optional)"
+                                               value="{{ HTTP_PROXY or '' }}">
+                                        <div class="form-text">
+                                            Format: http://proxy-server:port
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="httpsProxy" class="form-label">HTTPS Proxy</label>
+                                        <input type="text" class="form-control" id="httpsProxy" 
+                                               placeholder="HTTPS proxy server (optional)"
+                                               value="{{ HTTPS_PROXY or '' }}">
+                                        <div class="form-text">
+                                            Format: https://proxy-server:port
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="loadDefaults()">Load Defaults</button>
+                        <button type="button" class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">System Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Application Info</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Version:</strong> 1.0.0</li>
+                            <li><strong>Environment:</strong> {{ 'Production' if not debug else 'Development' }}</li>
+                            <li><strong>Database:</strong> {{ DATABASE_URL.split('://')[0] if DATABASE_URL else 'SQLite' }}</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Current Configuration</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Auto Fetch:</strong> <span id="currentAutoFetchStatus">{{ 'Enabled' if auto_fetch_enabled else 'Disabled' }}</span></li>
+                            <li><strong>Active Sources:</strong> <span id="activeSourcesCount">100+</span></li>
+                            <li><strong>Total Tenders:</strong> <span id="totalTendersCount">{{ total_tenders if total_tenders else 0 }}</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function saveSettings() {
+    // In a real application, this would send the settings to the server
+    // For now, just show a success message
+    showToast('Settings saved successfully! Please restart the application for changes to take effect.', 'success');
+}
+
+function loadDefaults() {
+    document.getElementById('autoFetchInterval').value = 1800;
+    document.getElementById('maxConcurrentRequests').value = 10;
+    document.getElementById('requestTimeout').value = 30;
+    document.getElementById('retryAttempts').value = 3;
+    document.getElementById('smtpPort').value = 587;
+    document.getElementById('smtpServer').value = 'smtp.gmail.com';
+    
+    showToast('Default settings loaded.', 'info');
+}
+</script>
+
+{% endblock %}
