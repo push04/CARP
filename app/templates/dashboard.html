@@ -1,0 +1,1164 @@
+{% extends "base.html" %}
+
+{% block title %}CARP Tender Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+        --primary: #111827;
+        --primary-light: #374151;
+        --primary-dark: #000000;
+        --secondary: #6b7280;
+        --success: #111827;
+        --warning: #4b5563;
+        --danger: #dc2626;
+        --info: #374151;
+        --dark: #111827;
+        --light: #f9fafb;
+        --bg-primary: #ffffff;
+        --bg-secondary: #f3f4f6;
+        --bg-tertiary: #e5e7eb;
+        --border: #d1d5db;
+        --text-primary: #111827;
+        --text-secondary: #4b5563;
+        --text-muted: #6b7280;
+        --bihar: #374151;
+        --jharkhand: #4b5563;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        min-height: 100vh;
+    }
+
+    .navbar {
+        background: var(--primary) !important;
+        box-shadow: 0 2px 8px rgba(15, 118, 110, 0.15);
+        padding: 0.75rem 1.5rem;
+    }
+
+    .navbar-brand {
+        font-weight: 700;
+        font-size: 1.25rem;
+        letter-spacing: -0.5px;
+    }
+
+    .navbar-brand span {
+        opacity: 0.9;
+    }
+
+    .nav-link {
+        font-weight: 500;
+        padding: 0.5rem 1rem !important;
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.15);
+    }
+
+    .stat-card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .stat-card:hover {
+        border-color: var(--primary-light);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-card.total {
+        border-left: 4px solid var(--primary);
+    }
+
+    .stat-card.open {
+        border-left: 4px solid var(--success);
+    }
+
+    .stat-card.bihar {
+        border-left: 4px solid var(--bihar);
+    }
+
+    .stat-card.jharkhand {
+        border-left: 4px solid var(--jharkhand);
+    }
+
+    .stat-number {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-top: 0.5rem;
+        font-weight: 600;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+    }
+
+    .stat-card.total .stat-icon {
+        background: var(--bg-secondary);
+        color: var(--primary);
+    }
+
+    .stat-card.open .stat-icon {
+        background: var(--bg-secondary);
+        color: var(--primary);
+    }
+
+    .stat-card.bihar .stat-icon {
+        background: var(--bg-secondary);
+        color: var(--primary);
+    }
+
+    .stat-card.jharkhand .stat-icon {
+        background: var(--bg-secondary);
+        color: var(--primary);
+    }
+
+    .card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-header {
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+        padding: 1rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+    }
+
+    .btn {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        font-weight: 600;
+        font-size: 0.85rem;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        transition: all 0.15s ease;
+        border: none;
+    }
+
+    .btn-primary {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 2px 4px rgba(17, 24, 39, 0.2);
+    }
+
+    .btn-primary:hover {
+        background: var(--primary-dark);
+        color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(17, 24, 39, 0.25);
+    }
+
+    .btn-success {
+        background: white;
+        color: var(--primary);
+        border: 1px solid var(--border);
+    }
+
+    .btn-success:hover {
+        background: var(--bg-secondary);
+        color: var(--primary);
+        border-color: var(--primary-light);
+    }
+
+    .btn-danger {
+        background: white;
+        color: var(--danger);
+        border: 1px solid var(--border);
+    }
+
+    .btn-danger:hover {
+        background: #fee2e2;
+        border-color: var(--danger);
+    }
+
+    .btn-warning {
+        background: var(--warning);
+        color: white;
+        border: 1px solid var(--warning);
+    }
+
+    .btn-warning:hover {
+        background: #1f2937;
+        color: white;
+    }
+
+    .btn-outline-primary {
+        background: transparent;
+        border: 1.5px solid var(--border);
+        color: var(--text-secondary);
+    }
+
+    .btn-outline-primary:hover {
+        background: var(--bg-secondary);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .btn-ai {
+        background: var(--primary);
+        color: white;
+        border: 1px solid var(--primary-light);
+    }
+
+    .btn-ai:hover {
+        background: var(--primary-dark);
+        color: white;
+        border: 1px solid var(--border);
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.85rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+    }
+
+    .filter-panel {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.35rem;
+        font-weight: 600;
+    }
+
+    .form-select,
+    .form-control {
+        background: var(--bg-secondary);
+        border: 1.5px solid var(--border);
+        color: var(--text-primary);
+        border-radius: 10px;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.875rem;
+        transition: all 0.15s;
+    }
+
+    .form-select:focus,
+    .form-control:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.1);
+    }
+
+    .form-select option {
+        background: var(--bg-primary);
+    }
+
+    .table-container {
+        overflow-x: auto;
+    }
+
+    .table {
+        color: var(--text-primary);
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+
+    .table thead {
+        background: var(--bg-secondary);
+    }
+
+    .table th {
+        border: none;
+        padding: 0.875rem 1rem;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: var(--text-secondary);
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 0.875rem 1rem;
+        border-color: var(--border);
+        vertical-align: middle;
+    }
+
+    .table tbody tr {
+        transition: background 0.15s;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(15, 118, 110, 0.03);
+    }
+
+    .badge {
+        padding: 0.35rem 0.65rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+    }
+
+    .badge-open {
+        background: var(--bg-secondary);
+        color: var(--primary);
+    }
+
+    .badge-closed {
+        background: var(--bg-tertiary);
+        color: var(--text-muted);
+    }
+
+    .badge-extended {
+        background: var(--bg-secondary);
+        color: var(--warning);
+    }
+
+    .badge-works {
+        background: var(--bg-secondary);
+        color: var(--primary);
+    }
+
+    .badge-goods {
+        background: var(--bg-secondary);
+        color: var(--primary-light);
+    }
+
+    .badge-services {
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+    }
+
+    .title-cell {
+        max-width: 280px;
+    }
+
+    .title-cell a {
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .title-cell a:hover {
+        color: var(--primary-dark);
+        text-decoration: underline;
+    }
+
+    .source-badge {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        font-family: 'JetBrains Mono', monospace;
+    }
+
+    .location-cell {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .location-icon {
+        width: 26px;
+        height: 26px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        font-weight: 700;
+    }
+
+    .location-bihar {
+        background: rgba(245, 158, 11, 0.15);
+        color: #b45309;
+    }
+
+    .location-jharkhand {
+        background: rgba(8, 145, 178, 0.15);
+        color: #0e7490;
+    }
+
+    .tender-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-weight: 600;
+        color: var(--success);
+    }
+
+    .date-cell {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+    }
+
+    .action-btns {
+        display: flex;
+        gap: 0.25rem;
+    }
+
+    .action-btns .btn {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        font-size: 0.8rem;
+    }
+
+    .pagination {
+        margin: 0;
+    }
+
+    .page-link {
+        background: var(--bg-primary);
+        border-color: var(--border);
+        color: var(--text-secondary);
+        padding: 0.5rem 0.85rem;
+        font-size: 0.85rem;
+        border-radius: 8px;
+        margin: 0 2px;
+    }
+
+    .page-link:hover {
+        background: var(--bg-secondary);
+        border-color: var(--primary);
+        color: var(--primary);
+    }
+
+    .page-item.active .page-link {
+        background: var(--primary);
+        border-color: var(--primary);
+    }
+
+    .page-item.disabled .page-link {
+        background: var(--bg-secondary);
+        color: var(--text-muted);
+    }
+
+    .results-info {
+        font-size: 0.8rem;
+        color: var(--text-muted);
+    }
+
+    .ai-panel {
+        background: var(--primary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1.25rem;
+        color: white;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .ai-panel h5 {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .ai-panel small {
+        opacity: 0.85;
+        font-size: 0.8rem;
+    }
+
+    .ai-panel .btn {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        border-radius: 8px;
+    }
+
+    .ai-panel .btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: white;
+    }
+
+    .modal-content {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+    }
+
+    .modal-header {
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        border-radius: 16px 16px 0 0;
+    }
+
+    .modal-title {
+        font-weight: 600;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-footer {
+        border-top: 1px solid var(--border);
+        padding: 1rem 1.5rem;
+    }
+
+    .spinner-border {
+        color: var(--primary);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: var(--text-muted);
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.3;
+        color: var(--text-muted);
+    }
+
+    .checkbox-cell {
+        width: 40px;
+    }
+
+    .checkbox-cell input {
+        accent-color: var(--primary);
+        width: 16px;
+        height: 16px;
+    }
+
+    hr {
+        border-color: var(--border);
+        margin: 1rem 0;
+    }
+
+    @media (max-width: 768px) {
+        .stat-number {
+            font-size: 1.5rem;
+        }
+
+        .filter-row {
+            flex-direction: column;
+        }
+
+        .filter-row>* {
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Stats Row -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card total">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number" id="totalTendersCount">{{ total_tenders }}</div>
+                    <div class="stat-label">Total Tenders</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-file-contract"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card open">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number" id="openTendersCount">{{ open_tenders }}</div>
+                    <div class="stat-label">Open Tenders</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-lock-open"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card bihar">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number" id="biharTendersCount">{{ bihar_tenders }}</div>
+                    <div class="stat-label">Bihar Tenders</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-map-marker-alt"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card jharkhand">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <div class="stat-number" id="jharkhandTendersCount">{{ jharkhand_tenders }}</div>
+                    <div class="stat-label">Jharkhand</div>
+                </div>
+                <div class="stat-icon">
+                    <i class="fas fa-mountain"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Panel -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="ai-panel">
+            <div class="row align-items-center">
+                <div class="col-lg-4">
+                    <h5 class="mb-1 text-white"><i class="fas fa-brain me-2"></i>AI Assistant</h5>
+                    <small class="text-white-50">Smart tender analysis & matching</small>
+                </div>
+                <div class="col-lg-8">
+                    <div class="d-flex gap-2 flex-wrap justify-content-lg-end">
+                        <button class="btn text-white" id="aiHealthBtn">
+                            <i class="fas fa-heartbeat me-1"></i> Status
+                        </button>
+                        <button class="btn text-white" id="aiEnhanceAllBtn">
+                            <i class="fas fa-magic me-1"></i> Enhance All
+                        </button>
+                        <button class="btn text-white" id="aiFilterBtn">
+                            <i class="fas fa-filter me-1"></i> Smart Filter
+                        </button>
+                        <button class="btn btn-warning btn-sm" id="batchAnalyzeBtn">
+                            <i class="fas fa-bolt me-1"></i> Batch Analyze
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="filter-panel">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label">Location</label>
+                    <select class="form-select" id="stateFilter">
+                        <option value="">All Locations</option>
+                        <option value="Bihar">Bihar</option>
+                        <option value="Jharkhand">Jharkhand</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="works">Works</option>
+                        <option value="goods">Goods</option>
+                        <option value="services">Services</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Medical</label>
+                    <select class="form-select" id="medicalFilter">
+                        <option value="">All Types</option>
+                        <option value="true">Medical Only</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchFilter" placeholder="Search tenders...">
+                </div>
+                <div class="col-md-1">
+                    <button class="btn btn-primary w-100" id="applyFilterBtn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+
+            <hr>
+
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-primary btn-sm" id="manualFetchBtn">
+                        <i class="fas fa-sync-alt me-1"></i> Fetch
+                    </button>
+                    <button class="btn btn-success btn-sm" id="exportCsvBtn">
+                        <i class="fas fa-file-csv me-1"></i> CSV
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="cleanAllBtn">
+                        <i class="fas fa-broom me-1"></i> Clean All
+                    </button>
+                </div>
+                <div class="d-flex gap-3 align-items-center">
+                    <span class="results-info" id="resultsCount"></span>
+                    <div class="form-check form-switch m-0">
+                        <input class="form-check-input" type="checkbox" id="autoFetchToggle"
+                            style="width: 40px; height: 20px; cursor: pointer;">
+                        <label class="form-check-label small" for="autoFetchToggle"
+                            style="color: var(--text-muted); cursor: pointer;">Auto</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tenders Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-list me-2 text-muted"></i>Tenders</span>
+                <span class="badge" style="background: var(--primary); color: white;" id="totalRecordsBadge">0</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-container">
+                    <table class="table" id="tendersTable">
+                        <thead>
+                            <tr>
+                                <th class="checkbox-cell"><input type="checkbox" id="selectAllTenders"></th>
+                                <th>Title</th>
+                                <th>Authority</th>
+                                <th>Department</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Published</th>
+                                <th>Deadline</th>
+                                <th>Value</th>
+                                <th>Status</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center p-3"
+                    style="background: var(--bg-secondary);">
+                    <div class="results-info" id="resultsInfo">
+                        Loading...
+                    </div>
+                    <nav id="paginationContainer"></nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Analysis Modal -->
+<div class="modal fade" id="aiAnalysisModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-brain me-2" style="color: var(--primary);"></i>AI Tender
+                    Analysis</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="aiAnalysisContent">
+                <div class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-2 text-muted">Analyzing tender...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Draft Modal -->
+<div class="modal fade" id="emailDraftModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-envelope me-2" style="color: var(--success);"></i>Draft Email
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Supplier Name</label>
+                    <input type="text" class="form-control" id="supplierNameInput" placeholder="Enter supplier name">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Generated Email</label>
+                    <textarea class="form-control" id="emailContent" rows="10"
+                        style="font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; resize: vertical;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="copyEmailBtn">
+                    <i class="fas fa-copy me-1"></i> Copy
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let autoFetchEnabled = false;
+    let currentPage = 1;
+    let currentPerPage = 25;
+    let currentFilters = {};
+    let currentSort = { field: 'publish_date', order: 'desc' };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        loadDashboardStats();
+        loadTenders(currentPage, currentPerPage, currentFilters, currentSort);
+        setupEventListeners();
+    });
+
+    function setupEventListeners() {
+        document.getElementById('applyFilterBtn')?.addEventListener('click', applyFilters);
+        document.getElementById('manualFetchBtn')?.addEventListener('click', manualFetch);
+        document.getElementById('exportCsvBtn')?.addEventListener('click', exportToCsv);
+        document.getElementById('cleanAllBtn')?.addEventListener('click', cleanAllTenders);
+        document.getElementById('autoFetchToggle')?.addEventListener('change', function () { toggleAutoFetch(this.checked); });
+        document.getElementById('aiHealthBtn')?.addEventListener('click', checkAIHealth);
+        document.getElementById('aiEnhanceAllBtn')?.addEventListener('click', aiEnhanceAll);
+        document.getElementById('aiFilterBtn')?.addEventListener('click', aiSmartFilter);
+        document.getElementById('batchAnalyzeBtn')?.addEventListener('click', batchAnalyzeTenders);
+        document.getElementById('copyEmailBtn')?.addEventListener('click', copyEmailToClipboard);
+        document.getElementById('searchFilter')?.addEventListener('keypress', function (e) { if (e.key === 'Enter') applyFilters(); });
+
+        document.addEventListener('click', function (e) {
+            if (e.target.classList.contains('page-link')) {
+                e.preventDefault();
+                const page = parseInt(e.target.getAttribute('data-page'));
+                if (!isNaN(page)) loadTenders(page, currentPerPage, currentFilters, currentSort);
+            }
+        });
+
+        document.getElementById('selectAllTenders')?.addEventListener('change', function () {
+            document.querySelectorAll('.tender-checkbox').forEach(cb => cb.checked = this.checked);
+        });
+    }
+
+    function loadDashboardStats() {
+        fetch('/metrics')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('totalTendersCount').textContent = data.total_tenders || 0;
+                document.getElementById('openTendersCount').textContent = data.open_tenders || 0;
+                if (data.bihar_tenders !== undefined) document.getElementById('biharTendersCount').textContent = data.bihar_tenders || 0;
+                if (data.jharkhand_tenders !== undefined) document.getElementById('jharkhandTendersCount').textContent = data.jharkhand_tenders || 0;
+            })
+            .catch(console.error);
+    }
+
+    function applyFilters() {
+        currentFilters = {
+            state: document.getElementById('stateFilter').value || undefined,
+            category: document.getElementById('categoryFilter').value || undefined,
+            status: document.getElementById('statusFilter').value || undefined,
+            medical: document.getElementById('medicalFilter').value || undefined,
+            search: document.getElementById('searchFilter').value.trim() || undefined
+        };
+        Object.keys(currentFilters).forEach(k => { if (!currentFilters[k]) delete currentFilters[k]; });
+        currentPage = 1;
+        loadTenders(currentPage, currentPerPage, currentFilters, currentSort);
+    }
+
+    function loadTenders(page = 1, perPage = 25, filters = {}, sort = {}) {
+        showLoading();
+        const params = new URLSearchParams({ page, per_page: perPage, sort_by: sort.field || 'publish_date', sort_order: sort.order || 'desc' });
+        Object.keys(filters).forEach(k => { if (filters[k]) params.append(k, filters[k]); });
+
+        fetch(`/api/tenders?${params}`)
+            .then(r => r.json())
+            .then(data => {
+                renderTenders(data.tenders);
+                renderPagination(data.current_page, data.pages);
+                updateResultsInfo(data);
+                hideLoading();
+            })
+            .catch(e => { console.error(e); showToast('Failed to load tenders', 'error'); hideLoading(); });
+    }
+
+    function getLocationHtml(location) {
+        if (!location) return '-';
+        const locLower = location.toLowerCase();
+        if (locLower.includes('bihar')) {
+            return `<div class="location-cell"><span class="location-icon location-bihar">BR</span>${location}</div>`;
+        } else if (locLower.includes('jharkhand')) {
+            return `<div class="location-cell"><span class="location-icon location-jharkhand">JK</span>${location}</div>`;
+        }
+        return location;
+    }
+
+    function getCategoryBadge(category) {
+        const cat = (category || 'general').toLowerCase();
+        return `<span class="badge badge-${cat}">${category || 'General'}</span>`;
+    }
+
+    function renderTenders(tenders) {
+        const tbody = document.querySelector('#tendersTable tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (tenders.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" class="empty-state"><i class="fas fa-inbox"></i><p>No tenders found</p></td></tr>`;
+            return;
+        }
+
+        tenders.forEach(t => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+            <td class="checkbox-cell"><input type="checkbox" class="tender-checkbox" data-id="${t.id}"></td>
+            <td class="title-cell">
+                <a href="/tender/${t.id}">${truncateText(t.title, 50)}</a>
+                <div class="source-badge">${t.source_portal}</div>
+            </td>
+            <td>${t.issuing_authority || '-'}</td>
+            <td>${t.department || '-'}</td>
+            <td>${getCategoryBadge(t.category)}</td>
+            <td>${getLocationHtml(t.location)}</td>
+            <td class="date-cell">${formatDate(t.publish_date)}</td>
+            <td class="date-cell">${formatDate(t.deadline_date)}</td>
+            <td class="tender-value">${formatCurrency(t.tender_value)}</td>
+            <td><span class="badge badge-${t.status || 'open'}">${t.status || 'Open'}</span></td>
+            <td class="action-btns">
+                <button class="btn btn-outline-primary btn-icon" onclick="aiAnalyzeTender(${t.id})" title="Analyze"><i class="fas fa-brain"></i></button>
+                <button class="btn btn-outline-primary btn-icon" onclick="aiDraftEmail(${t.id})" title="Email"><i class="fas fa-envelope"></i></button>
+            </td>
+        `;
+            tbody.appendChild(row);
+        });
+    }
+
+    function renderPagination(currentPage, totalPages) {
+        const container = document.getElementById('paginationContainer');
+        if (!container || totalPages <= 1) { if (container) container.innerHTML = ''; return; }
+
+        let html = '<nav><ul class="pagination mb-0">';
+        html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage - 1}">&laquo;</a></li>`;
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+            html += `<li class="page-item ${i === currentPage ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+        }
+        html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}"><a class="page-link" href="#" data-page="${currentPage + 1}">&raquo;</a></li></ul></nav>`;
+        container.innerHTML = html;
+    }
+
+    function updateResultsInfo(data) {
+        const start = (data.current_page - 1) * data.per_page + 1;
+        const end = Math.min(data.current_page * data.per_page, data.total);
+        document.getElementById('resultsInfo').textContent = `Showing ${start} to ${end} of ${data.total} tenders`;
+        document.getElementById('totalRecordsBadge').textContent = `${data.total}`;
+        document.getElementById('resultsCount').textContent = `${data.total} results`;
+    }
+
+    function formatDate(d) { return d ? new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'; }
+    function formatCurrency(v) { return v ? '₹' + parseFloat(v).toLocaleString('en-IN', { maximumFractionDigits: 0 }) : '-'; }
+    function truncateText(t, m) { return t ? (t.length > m ? t.substring(0, m) + '...' : t) : ''; }
+    function showLoading() { document.getElementById('loadingSpinner')?.classList.remove('d-none'); }
+    function hideLoading() { document.getElementById('loadingSpinner')?.classList.add('d-none'); }
+
+    function showToast(m, t = 'info') {
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center border-0 show';
+        let bg = 'var(--primary)';
+        let icon = 'info-circle';
+        if (t === 'error') { bg = 'var(--danger)'; icon = 'exclamation-circle'; }
+        if (t === 'success') { bg = 'var(--success)'; icon = 'check-circle'; }
+        toast.style.background = bg;
+        toast.innerHTML = `<div class="toast-body d-flex align-items-center text-white py-2 px-3"><i class="fas fa-${icon} me-2"></i>${m}</div>`;
+        document.getElementById('toastContainer')?.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    // AI Functions
+    function checkAIHealth() {
+        fetch('/ai/health').then(r => r.json()).then(d => {
+            if (d.status === 'healthy') {
+                showToast(`AI Online | Model: ${d.model}`, 'success');
+            } else {
+                showToast(`AI Error: ${d.message || 'Unknown error'}`, 'error');
+            }
+        }).catch(e => {
+            showToast('AI service unavailable', 'error');
+        });
+    }
+
+    function aiAnalyzeTender(id) {
+        const modal = new bootstrap.Modal(document.getElementById('aiAnalysisModal'));
+        modal.show();
+        fetch(`/ai/analyze_tender/${id}`).then(r => r.json()).then(d => {
+            if (d.status === 'success') {
+                const a = d.analysis;
+                document.getElementById('aiAnalysisContent').innerHTML = `
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 style="color: var(--primary);">Summary</h6><p class="text-muted">${a.summary || '-'}</p>
+                        <h6 style="color: var(--primary);">Sector</h6><p class="text-muted">${a.sector || '-'}</p>
+                        <h6 style="color: var(--primary);">Difficulty</h6><p class="text-muted">${a.difficulty_level || '-'}</p>
+                    </div>
+                    <div class="col-md-6 text-center">
+                        <h6 style="color: var(--success);">Medical Fit Score</h6>
+                        <div style="font-size:3.5rem;font-weight:700;font-family: 'JetBrains Mono', monospace; color:${a.fit_score_for_medical_supplier > 70 ? 'var(--success)' : a.fit_score > 40 ? 'var(--warning)' : 'var(--danger)'}">${a.fit_score_for_medical_supplier || 50}</div>
+                        <h6 class="mt-2 text-muted">Competition: ${a.competition_estimate || '-'}</h6>
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Requirements</h6>
+                        <ul class="text-muted">${(a.eligibility_requirements || []).map(e => `<li>${e}</li>`).join('') || '-'}</ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Documents</h6>
+                        <ul class="text-muted">${(a.documents_required || []).map(d => `<li>${d}</li>`).join('') || '-'}</ul>
+                    </div>
+                </div>`;
+            } else {
+                document.getElementById('aiAnalysisContent').innerHTML = `<div class="text-danger">Error: ${d.message}</div>`;
+            }
+        });
+    }
+
+    function aiDraftEmail(id) {
+        const modal = new bootstrap.Modal(document.getElementById('emailDraftModal'));
+        modal.show();
+        document.getElementById('supplierNameInput').value = '';
+        document.getElementById('emailContent').value = 'Generating...';
+        fetch(`/ai/draft_email/${id}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ supplier_name: 'Supplier' }) })
+            .then(r => r.json()).then(d => { document.getElementById('emailContent').value = d.status === 'success' ? d.email : 'Error: ' + d.message; });
+    }
+
+    function aiEnhanceAll() {
+        if (!confirm('Enhance all tenders with AI? This may take a while.')) return;
+        showToast('Enhancing all tenders...', 'info');
+        fetch('/ai/batch_analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
+            .then(r => r.json()).then(d => {
+                if (d.status === 'success') {
+                    showToast(`Enhanced ${d.count} tenders`, 'success');
+                    loadTenders(currentPage, currentPerPage, currentFilters, currentSort);
+                } else {
+                    showToast(d.message || 'Error enhancing tenders', 'error');
+                }
+            }).catch(e => {
+                showToast('Failed to enhance tenders', 'error');
+            });
+    }
+
+    function aiSmartFilter() {
+        fetch('/ai/filter_sort_tenders', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ preferences: { medical_focus: true }, limit: 25 }) })
+            .then(r => r.json()).then(d => {
+                if (d.tenders) {
+                    renderTenders(d.tenders.map(t => t.tender));
+                    showToast(`Found ${d.total} matching tenders`, 'success');
+                }
+            });
+    }
+
+    function batchAnalyzeTenders() {
+        const ids = Array.from(document.querySelectorAll('.tender-checkbox:checked')).map(c => parseInt(c.dataset.id));
+        if (ids.length === 0) {
+            if (confirm('Analyze all tenders?')) {
+                showToast('Analyzing all tenders...', 'info');
+                fetch('/ai/batch_analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ all: true }) })
+                    .then(r => r.json()).then(d => { showToast(`Analyzed ${d.count} tenders`, 'success'); });
+                return;
+            }
+        }
+        if (ids.length === 0) { showToast('Select tenders first', 'info'); return; }
+        fetch('/ai/batch_analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tender_ids: ids }) })
+            .then(r => r.json()).then(d => { showToast(`Analyzed ${d.count} tenders`, 'success'); });
+    }
+
+    function copyEmailToClipboard() {
+        navigator.clipboard.writeText(document.getElementById('emailContent').value).then(() => showToast('Copied to clipboard!', 'success'));
+    }
+
+    function manualFetch() {
+        const btn = document.getElementById('manualFetchBtn');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+        fetch('/fetch_manual', { method: 'POST' }).then(r => r.json()).then(d => {
+            showToast('Fetch started!', 'success');
+            setTimeout(() => {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-sync-alt me-1"></i> Fetch';
+                loadDashboardStats();
+            }, 3000);
+        });
+    }
+
+    function exportToCsv() { window.location.href = '/export_csv'; showToast('Exporting CSV...', 'info'); }
+
+    function cleanAllTenders() {
+        if (!confirm('This will remove:\n• Junk tenders (invalid titles, javascript URLs)\n• Duplicate tenders\n• Tenders older than 90 days\n\nContinue?')) return;
+
+        const btn = document.getElementById('cleanAllBtn');
+        btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+        fetch('/cleanup_all', { method: 'POST' }).then(r => r.json()).then(d => {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-broom me-1"></i> Clean All';
+
+            if (d.status === 'completed') {
+                showToast(`Cleaned: ${d.deleted_count} tenders removed`, 'success');
+                loadDashboardStats();
+                loadTenders(currentPage, currentPerPage, currentFilters, currentSort);
+            } else {
+                showToast('Error: ' + d.message, 'error');
+            }
+        }).catch(e => {
+            btn.disabled = false; btn.innerHTML = '<i class="fas fa-broom me-1"></i> Clean All';
+            showToast('Cleanup failed', 'error');
+        });
+    }
+
+    function toggleAutoFetch(e) {
+        fetch('/toggle_auto_fetch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled: e }) }).then(r => r.json()).then(d => { showToast(`Auto-fetch ${e ? 'enabled' : 'disabled'}`, 'success'); });
+    }
+
+    setInterval(loadDashboardStats, 30000);
+</script>
+{% endblock %}

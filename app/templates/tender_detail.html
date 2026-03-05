@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Tender Details - {{ tender.title[:50] }}...{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card tender-detail-card">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h2 class="mb-0">{{ tender.title }}</h2>
+                <div class="d-flex gap-2">
+                    {% if tender.source_url %}
+                    <a href="{{ tender.source_url }}" target="_blank" class="btn btn-outline-dark">
+                        <i class="fas fa-external-link-alt me-1"></i> Visit Source Website
+                    </a>
+                    {% endif %}
+                    <a href="{{ url_for('main.index') }}" class="btn btn-dark">
+                        <i class="fas fa-arrow-left me-1"></i> Back to Dashboard
+                    </a>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <span class="badge bg-dark">{{ tender.source_portal }}</span>
+                <span
+                    class="badge {% if tender.status == 'open' %}bg-secondary{% elif tender.status == 'closed' %}bg-dark{% else %}bg-secondary{% endif %}">
+                    {{ tender.status|title }}
+                </span>
+                <span class="badge bg-secondary">{{ tender.location or 'N/A' }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Description</h4>
+            <div class="detail-content">
+                {% if tender.description %}
+                {{ tender.description }}
+                {% else %}
+                <em>No description available</em>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Additional Information</h4>
+            <div class="detail-content">
+                {% if tender.raw_html %}
+                <details>
+                    <summary>Raw HTML Content</summary>
+                    <pre
+                        style="white-space: pre-wrap; word-break: break-word;">{{ tender.raw_html[:1000] }}{% if tender.raw_html|length > 1000 %}...{% endif %}</pre>
+                </details>
+                {% endif %}
+
+                {% if attachments %}
+                <div class="mt-3">
+                    <h5>Attachments</h5>
+                    <ul>
+                        {% for attachment in attachments %}
+                        <li><a href="{{ attachment }}" target="_blank">{{ attachment }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Supplier Matches</h4>
+            <div class="detail-content">
+                {% if supplier_matches %}
+                {% for match in supplier_matches %}
+                <div class="card supplier-match-card mb-3">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="mb-1">{{ match.name or match.get('name', 'Unknown') }}</h6>
+                            <span class="badge bg-dark">{{ match.match_score or match.get('match_score', 0) }}%
+                                match</span>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <p class="mb-1 small"><strong>Contact:</strong> {{ match.get('contact_person', 'N/A') }}
+                                </p>
+                                <p class="mb-1 small"><strong>Email:</strong> {{ match.get('email', 'N/A') }}</p>
+                                <p class="mb-1 small"><strong>Phone:</strong> {{ match.get('phone', 'N/A') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-1 small"><strong>Experience:</strong> {{ match.get('experience_years',
+                                    'N/A') }} years</p>
+                                <p class="mb-1 small"><strong>Rating:</strong> {{ match.get('rating', 'N/A') }}/5</p>
+                            </div>
+                        </div>
+                        {% if match.get('ai_analysis') %}
+                        <div class="mt-2">
+                            {% if match.ai_analysis.get('relevance_reasons') %}
+                            <p class="mb-1 small"><strong>Match Reasons:</strong></p>
+                            <ul class="mb-0 small">
+                                {% for reason in match.ai_analysis.relevance_reasons %}
+                                <li>{{ reason }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% if match.ai_analysis.get('estimated_price_range') %}
+                            <p class="mb-0 small mt-1"><strong>Est. Price:</strong>
+                                ₹{{ "{:,.0f}".format(match.ai_analysis.estimated_price_range.get('min', 0)|int) }} -
+                                ₹{{ "{:,.0f}".format(match.ai_analysis.estimated_price_range.get('max', 0)|int) }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <p>No supplier matches found for this tender.</p>
+                <button class="btn btn-dark" onclick="showSupplierMatches({{ tender.id }})">
+                    <i class="fas fa-search me-1"></i> Find Supplier Matches
+                </button>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Basic Information</h4>
+            <div class="detail-content">
+                <dl class="row">
+                    <dt class="col-sm-5">Tender ID:</dt>
+                    <dd class="col-sm-7">{{ tender.tender_id or 'N/A' }}</dd>
+
+                    <dt class="col-sm-5">Issuing Authority:</dt>
+                    <dd class="col-sm-7">{{ tender.issuing_authority or 'N/A' }}</dd>
+
+                    <dt class="col-sm-5">Department:</dt>
+                    <dd class="col-sm-7">{{ tender.department or 'N/A' }}</dd>
+
+                    <dt class="col-sm-5">Category:</dt>
+                    <dd class="col-sm-7">{{ tender.category or 'N/A' }}</dd>
+
+                    <dt class="col-sm-5">Sub Category:</dt>
+                    <dd class="col-sm-7">{{ tender.sub_category or 'N/A' }}</dd>
+
+                    <dt class="col-sm-5">Location:</dt>
+                    <dd class="col-sm-7">{{ tender.location or 'N/A' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Dates & Values</h4>
+            <div class="detail-content">
+                <dl class="row">
+                    <dt class="col-sm-6">Published Date:</dt>
+                    <dd class="col-sm-6">{{ tender.publish_date.strftime('%B %d, %Y') if tender.publish_date else 'N/A'
+                        }}</dd>
+
+                    <dt class="col-sm-6">Deadline Date:</dt>
+                    <dd class="col-sm-6">{{ tender.deadline_date.strftime('%B %d, %Y') if tender.deadline_date else
+                        'N/A' }}</dd>
+
+                    <dt class="col-sm-6">Tender Value:</dt>
+                    <dd class="col-sm-6">
+                        {% if tender.tender_value %}
+                        ₹{{ "{:,.0f}".format(tender.tender_value) }} {{ tender.currency or 'INR' }}
+                        {% else %}
+                        N/A
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-6">Verification Score:</dt>
+                    <dd class="col-sm-6">
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar" role="progressbar"
+                                style="width: {{ tender.verification_score }}%;"
+                                aria-valuenow="{{ tender.verification_score }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ tender.verification_score }}%
+                            </div>
+                        </div>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Contact Information</h4>
+            <div class="detail-content">
+                <dl class="row">
+                    <dt class="col-sm-4">Email:</dt>
+                    <dd class="col-sm-8">{{ tender.contact_email or 'N/A' }}</dd>
+
+                    <dt class="col-sm-4">Phone:</dt>
+                    <dd class="col-sm-8">{{ tender.contact_phone or 'N/A' }}</dd>
+                </dl>
+            </div>
+        </div>
+
+        <div class="card tender-detail-card">
+            <h4 class="detail-title">Actions</h4>
+            <div class="detail-content">
+                <div class="d-grid gap-2">
+                    <a href="{{ tender.source_url }}" target="_blank" class="btn btn-dark">
+                        <i class="fas fa-external-link-alt me-1"></i> View Original
+                    </a>
+                    <button class="btn btn-outline-dark" onclick="showSupplierMatches({{ tender.id }})">
+                        <i class="fas fa-handshake me-1"></i> Find Suppliers
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="generateTenderPdf({{ tender.id }})">
+                        <i class="fas fa-file-pdf me-1"></i> Export PDF
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="copyTenderUrl()">
+                        <i class="fas fa-copy me-1"></i> Copy URL
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function copyTenderUrl() {
+        navigator.clipboard.writeText(window.location.href).then(function () {
+            showToast('Tender URL copied to clipboard!', 'success');
+        }).catch(function (err) {
+            console.error('Failed to copy URL: ', err);
+            showToast('Failed to copy URL', 'error');
+        });
+    }
+
+    function generateTenderPdf(tenderId) {
+        fetch(`/export_pdf`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tender_ids: [tenderId] })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.filename) {
+                    const link = document.createElement('a');
+                    link.href = `/download_pdf/${data.filename}`;
+                    link.download = `tender_${tenderId}_report_${new Date().toISOString().slice(0, 10)}.pdf`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    showToast('PDF export completed', 'success');
+                } else {
+                    showToast('Error exporting PDF: ' + (data.error || 'Unknown error'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error exporting to PDF:', error);
+                showToast('Error exporting to PDF', 'error');
+            });
+    }
+
+    function showSupplierMatches(tenderId) {
+        var btn = event ? event.target.closest('button') : null;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Finding...';
+        }
+
+        fetch('/get_supplier_matches/' + tenderId)
+            .then(function (r) { return r.json(); })
+            .then(function (matches) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-handshake me-1"></i> Find Suppliers';
+                }
+                if (!matches || matches.length === 0) {
+                    showToast('No supplier matches found for this tender', 'info');
+                    return;
+                }
+                var html = '<h5 class="mt-3">Supplier Matches (' + matches.length + ')</h5>';
+                matches.forEach(function (m) {
+                    html += '<div class="card mb-2"><div class="card-body p-3">';
+                    html += '<div class="d-flex justify-content-between align-items-start">';
+                    html += '<h6 class="mb-1">' + (m.name || 'Unknown') + '</h6>';
+                    html += '<span class="badge bg-dark">' + (m.match_score || 0) + '% match</span>';
+                    html += '</div>';
+                    if (m.email) html += '<p class="mb-1 small"><strong>Email:</strong> ' + m.email + '</p>';
+                    if (m.phone) html += '<p class="mb-1 small"><strong>Phone:</strong> ' + m.phone + '</p>';
+                    if (m.ai_analysis && m.ai_analysis.estimated_price_range) {
+                        var pr = m.ai_analysis.estimated_price_range;
+                        html += '<p class="mb-0 small"><strong>Est. Price:</strong> ₹' + (pr.min || 0).toLocaleString() + ' - ₹' + (pr.max || 0).toLocaleString() + '</p>';
+                    }
+                    html += '</div></div>';
+                });
+                var supplierSections = document.querySelectorAll('.detail-content');
+                if (supplierSections.length >= 3) {
+                    supplierSections[2].innerHTML = html;
+                }
+                showToast('Found ' + matches.length + ' supplier matches', 'success');
+            })
+            .catch(function (err) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-handshake me-1"></i> Find Suppliers';
+                }
+                console.error('Supplier match error:', err);
+                showToast('Error finding supplier matches', 'error');
+            });
+    }
+
+    function showToast(message, type) {
+        var container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.className = 'toast-container position-fixed top-0 end-0 p-3';
+            container.style.zIndex = '10000';
+            document.body.appendChild(container);
+        }
+        var toast = document.createElement('div');
+        toast.className = 'toast align-items-center border-0 show';
+        var bg = type === 'error' ? '#dc2626' : type === 'success' ? '#111827' : '#4b5563';
+        toast.style.background = bg;
+        toast.innerHTML = '<div class="toast-body d-flex align-items-center text-white py-2 px-3"><i class="fas fa-' + (type === 'error' ? 'exclamation-circle' : type === 'success' ? 'check-circle' : 'info-circle') + ' me-2"></i>' + message + '</div>';
+        container.appendChild(toast);
+        setTimeout(function () { toast.remove(); }, 4000);
+    }
+</script>
+
+{% endblock %}

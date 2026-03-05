@@ -1,0 +1,587 @@
+Goal: build a robust, production-grade Python system that finds all available tenders for the states of Bihar and Jharkhand, aggregates them from many sources (GEM, eProc portals, state eProc, RSS, sitemaps, email feeds, FTP, public datasets, CPSE portals, central & local government procurement portals, vendor portals, and B2B marketplaces as relevant), deduplicates & validates each tender (no mocks/hardcoding), stores them in CSV, and exposes a single professional Flask dashboard that opens in Google Chrome from a Windows .bat click. The system should include auto-fetch (every 30 minutes), manual fetch, advanced filtering/sorting, delete-old-tenders, supplier-match feature (which companies can supply the product + price ranges), and PDF export (beautiful checklist-style PDF for manual verification with client name prefilled). Use OpenRouter API for advanced AI analysis, supplier matching assistance, email drafting and optional supplier selection scoring.
+
+Deliverables (explicit):
+
+A step-by-step working implementation in Python — provide concrete code files one-by-one (each file's path + full contents).
+
+A clear directory tree and exactly where to copy/paste each file.
+
+A Windows .bat file to create/activate a virtualenv and run the app in Chrome.
+
+Explanations for environment variables (including where to put the OpenRouter API key), third-party service credentials, and how to test.
+
+Unit/integration test files to sanity-check scraping/fetching and data model.
+
+Instructions for production hardening (logging, rate-limits, proxies, scheduling, deployment ideas).
+
+Non-negotiable constraints:
+
+Strictly no fake, mock, or hardcoded tenders. Every record must include a verifiable source URL and a timestamp when fetched. If a site blocks programmatic access, use fallback fetch methods (rendered headless browser) — but still verify the tender on the live portal and include the source URL.
+
+Avoid DNS failures and common network errors by using multiple fetching strategies and robust retry/backoff/proxy fallbacks. If a particular source permanently fails, mark it and continue with others — never stop the whole pipeline.
+
+High data quantity & validity — use many sources and many fetching methods. The system must aim to return large numbers of real tenders for the two states, not a few examples.
+
+High-level architecture & technology stack (required):
+
+Python 3.10+
+
+Fetching: requests, aiohttp (async), httpx (optional), beautifulsoup4, lxml.
+
+Headless browser render & automation fallbacks: Playwright or Selenium with undetected drivers (prefer Playwright for stability) — use for JS-heavy portals or sites that block simple requests.
+
+Scheduler: APScheduler (in-process) for 30-minute auto mode; optionally provide Celery + Redis notes for scale.
+
+Web framework: Flask + Flask-Login (if auth required later) + Flask-APScheduler integration.
+
+Frontend: modern professional theme using TailwindCSS or Bootstrap 5 (designer-like palette, fonts via Google Fonts) — make it look non-AI-generated and corporate-grade. Provide CSS customization. Use React only if asked later; default to server-rendered Flask + Bootstrap/Tailwind.
+
+CSV & storage: both CSV and lightweight DB for operations — pandas for CSV reading/writing, SQLite (SQLAlchemy model) as canonical store for dedupe, indexing, and quick queries. Keep CSV export as an output snapshot of the DB.
+
+PDF generation: WeasyPrint or wkhtmltopdf (HTML → PDF) or ReportLab. Use HTML templates so the PDF looks great with checkboxes; prefer WeasyPrint for CSS-friendly rendering.
+
+Email: SMTP via smtplib or Flask-Mail. Use OpenRouter API to draft email text.
+
+AI: OpenRouter client (API key via env var OPENROUTER_API_KEY) for advanced analysis (semantic dedupe, supplier matching suggestions, scoring).
+
+Supplier-match: rapidfuzz (fuzzy matching) + semantic embeddings/use OpenRouter semantic comparison + optional queries to supplier directories (Udyam/MSME registry, IndiaMART, TradeIndia, company registries). Provide a pipeline to ingest supplier catalogs (CSV) and to do semantic + attribute matching.
+
+Data model / CSV columns (must be exactly these fields in the output CSV):
+
+tender_id (portal's ID when available)
+
+title
+
+description (short summary)
+
+issuing_authority
+
+department
+
+source_portal (e.g., GEM, Jharkhand eProc, Bihar eProc, CPPP)
+
+source_url (full URL)
+
+publish_date (ISO 8601)
+
+deadline_date (ISO 8601)
+
+tender_value (numeric / currency if present)
+
+currency
+
+category (works, goods, services)
+
+sub_category
+
+location (city/district)
+
+state (Bihar/Jharkhand)
+
+attachments (URLs, JSON array)
+
+contact_email
+
+contact_phone
+
+raw_html (store raw if small or store filename ref)
+
+last_checked (ISO 8601 timestamp)
+
+status (open/closed/extended)
+
+verification_score (0–100; higher = more confident; computed by heuristics + AI)
+
+supplier_matches (JSON: top 5 supplier suggestions with match-score & price-range)
+
+Fetching strategy — many methods, prioritized, with fallbacks:
+
+Official portal APIs: use public APIs when available (GEM has APIs; other portals sometimes expose JSON endpoints). Authenticate if needed. Prefer API first.
+
+RSS & sitemaps: discover /sitemap.xml and RSS/Atom feeds for procurement portals. Fetch sitemaps and follow links for new notices.
+
+HTML scraping: use requests/httpx + BeautifulSoup for servers that serve static HTML. Respect robots.txt but implement programmatic exception for authenticated/allowed scraping for your client — explain legal considerations.
+
+Headless browser rendering: Playwright fallback when content is JS-loaded or site blocks simple requests. Use stealth/user-agent rotation.
+
+Email scrape: optionally parse inbound procurement emails (if client sets a mailbox) — give instructions for IMAP ingestion.
+
+FTP / public datasets: some authorities publish datasets — poll them.
+
+Search aggregation: run targeted Google / Bing site: portal queries (use a custom search API or scraping with rate-limit) to discover tenders missed by direct scraping.
+
+Portal-specific tricks: follow pagination, change query parameters to get all categories, query by district/state filters, and iterate through procurement categories.
+
+Parallel & scheduled: use async + concurrency + rate-limiting; fetch many sources in parallel; use exponential backoff for 429/5xx.
+
+DNS/network fallback: if DNS or network fails for a source, attempt: (a) retry with exponential backoff; (b) try a different resolver or a simple request via a proxy (configurable list); (c) fallback to headless browser from another IP; (d) log and mark the source temporarily degraded but continue other sources. Never let a single DNS error stop the pipeline.
+
+Validation & deduplication:
+
+Normalize title, issuing authority, and tender ID; canonicalize dates.
+
+Two-pass dedupe: quick hash-based dedupe (title+publish_date) then semantic dedupe using OpenRouter embeddings/semantic similarity to detect near-duplicates or reposted tenders. Keep canonical source list for duplicates.
+
+Verify every record by checking the source page for presence of key fields (title, publish_date, deadline) before marking as valid. If verification fails, flag for manual review and do not export to "verified" CSV.
+
+Supplier-match feature (requirements):
+
+When user clicks a tender, show top 5 companies that can supply the described product/services. For each suggested company show: company name, contact, why match (keywords/semantic score), estimated price range, and link(s) where that supplier lists the product (if available).
+
+Matching pipeline:
+
+Extract product line-items & short description from tender (use NLP/regex).
+
+Run fuzzy keyword match against an internal supplier catalog (CSV or SQLite) with rapidfuzz.
+
+Produce semantic similarity via OpenRouter embeddings or semantic compare.
+
+For price range: infer from tender's estimated value or query B2B portals to find supplier price listings; if not available, output estimated range with confidence.
+
+Let user upload supplier CSVs and run batch matching. Provide an “Add supplier” UI to enrich internal database.
+
+Show recommended next actions: email suppliers (email body drafted by OpenRouter), place RFQ, or mark for manual outreach.
+
+Dashboard feature list (Flask UI):
+
+Single-page dashboard (or minimal multi-tab) with:
+
+Real-time counters: total tenders, new since last check, open/closed.
+
+Table view with advanced sorting, filters (state, category, department, publish_date range, deadline range, value range, verification_score threshold). UI must support column toggling, multi-column sort, server-side pagination, and bulk actions (export CSV, mark for PDF, delete).
+
+Tender detail view: full description, attachments, source page preview (iframe when allowed), supplier suggestions, and action buttons (email suppliers, copy URL, mark checked).
+
+Auto Mode toggle: ON/OFF; when ON it fetches automatically every 30 minutes and shows next-run countdown.
+
+Manual Fetch: run a full fetch or targeted fetch (select sources). Show logs live (last 100 fetch events).
+
+Settings: API keys (OpenRouter), proxy list, fetch frequency, email SMTP config, platform-specific credentials.
+
+Audit & logs: view fetch history, failures, verification results.
+
+UI/UX details: corporate, high-quality fonts (e.g., Inter or Poppins), subtle color palette (two accent colors), rounded cards, responsive layout, and professional spacing. Provide CSS variables for quick theme changes. Avoid "AI-looking" generic templates—design should be clean, slightly conservative, and modern.
+
+PDF output (beautiful checklist):
+
+Implement an "Export CSV → PDF checklist" that renders selected tenders into a printable PDF with: header showing client name (CARP BIOTECH PRIVATE LIMITED), date, page numbers; each tender block includes title, issue authority, publish_date, deadline, brief description, attachments list (as clickable links if PDF viewed digitally), and a checkbox per tender for manual verification. Use HTML templates + WeasyPrint to generate the PDF; ensure checkboxes render clearly and layout works for A4/US Letter.
+
+Windows .bat run & sample instructions:
+
+Provide a .bat that:
+
+Creates a venv (if not exist) in project folder.
+
+Installs pip install -r requirements.txt if dependencies missing (or skip if in offline).
+
+Exports required env vars (Windows set commands) or instruct user to set them in a .env file.
+
+Runs python -m app.main (or similar) which starts the Flask server on localhost and automatically opens Google Chrome pointing to the dashboard URL (use webbrowser.open or start chrome <url>).
+
+Also include an option in the .bat to run the scheduler-only worker if needed.
+
+Resilience, monitoring & production notes:
+
+Use robust logging (structured JSON logs).
+
+Keep per-source rate-limits; configurable proxy rotation.
+
+Health-check endpoints: /health and /metrics (simple counters).
+
+Provide runbook for when 403/CAPTCHA encountered: recommend manual step or 3rd-party CAPTCHA solving only if client authorizes.
+
+Suggest Dockerfile + docker-compose skeleton for production (Flask + Redis + Postgres if scaling).
+
+Suggest optional deployment: VPS with gunicorn + nginx, or a small cloud VM.
+
+Security & legal notes:
+
+Respect robots.txt and portal terms of service — but include a short paragraph in generated README about procurement portal scraping legal considerations and how the client must ensure compliance.
+
+Keep API keys in env vars; never commit secrets.
+
+Testing & verification:
+
+Provide unit tests for parsers, dedupe, and supplier-match using pytest.
+
+Provide a test harness to simulate source responses (but ensure final delivered data is real). Tests must be optional and not contain real tenders; use synthetic HTML only in tests.
+
+What I want Claude to output (explicit instruction):
+
+First: a top-level README.md explaining the system, exact environment variables (including OPENROUTER_API_KEY), how to run the .bat, and the directory tree.
+
+Next: the full directory tree (example) and then file-by-file the Python files, HTML templates, CSS, JavaScript assets, requirements.txt, .bat file, and test files. For every file, print:
+
+path relative to project root, and
+
+the complete file contents (no omissions).
+
+After each file, a brief 2–3 line explanation of where to paste it and why.
+
+Include requirements.txt and the precise pip package versions you tested with.
+
+Provide a sample .env.example (with placeholders, not real keys) and show where to set OPENROUTER_API_KEY.
+
+Provide a short troubleshooting FAQ (top 10 issues & fixes — e.g., DNS failures, Chrome not opening, Playwright install).
+
+Provide final demonstration steps: how to run the .bat, how to toggle Auto Mode, how to export selected tenders to CSV, and how to generate the PDF checklist.
+
+Extra advanced enhancements (bonus, include by default):
+
+Use OpenRouter to do semantic deduplication and supplier relevance scoring — show code snippets demonstrating the prompt & API usage for these functions.
+
+Provide an optional embedding store (SQLite + vectordb-like minimal) to accelerate semantic queries.
+
+Add a lightweight API endpoint /api/tenders with query params (for programmatic access).
+
+Add role-based access notes (if the client wants to add users later).
+
+Provide a small Cypress or Playwright test script (end-to-end) that opens the dashboard and clicks through a sample tender detail (use a test mode).
+
+Tone & output rules for Claude while writing code:
+
+Be explicit and produce runnable code. Do not output placeholders without clear comments indicating what exactly the user must change.
+
+When external credentials are required, stop and list the exact env vars and where they must be set, but keep producing the rest of the code.
+
+Do not hardcode any tender or supplier data anywhere. Use sample flags and test-modes that generate fake data only for unit tests. In the real run, all data must come from live fetching.
+
+Use defensive programming — catch and log exceptions for each source; do not allow a single failing source to crash the whole run.
+
+Document network fallback logic inline in the code comments.
+
+Provide clear inline comments for complex parts (dedupe, supplier matching, Playwright fallbacks, and PDF generation).
+
+create the following app:
+
+a python file that runs on clicking .bat that finds ALLLL AVAILABLE TENDERS FOR THE STATE OF BIHAR AND JHARKHAND,,, via multiple sources like gem, eproc2, etc... USE MULTIPLE,,A LOT OF SOURCES,,, USE MULTIPLE MANY METHODS TO FETCH DATA,,,, I DONT WANT TO SEE ANY DNS FAILURE OR ANY OTHER THING,,, USE MANY METHODS FOR FETCHING,,, SAVE ALL IN A CSV,,, A SINGLE DASHBOARD FOR ALL FUNCTIONS--- MAKE USING FLASK,, THAT OPENS ON GOOGLE CHROME,,,,--- FROM WHERE MY CLIENT CAN FETCH LATEST TENDERS,,, DELETE OLD TENDERS,,, ADVANCED SORTING,, FILTERING,,, TURN ON AUTO MODE THAT WORKS AND FETCHES EVERY 30 MINUTES,,, USE BROWSER AUTOMATIONS TOO IF REQUIRED FOR FETCHING--- BUT I NEED A LOT OF REAL VALID TENDERS,,, STRICTLY NO FAKE, NO MOCK, NO HARDCODED,,,--- THEN LATER PRINT CSV AS A BEAUTIFUL PDF WITH CHECK BOXES FOR MANUALLY CHECK,,,, CLIENT NAME (CARP BIOTECH PRIVATE LIMITED).... 
+
+ENTIRE SYSTEM SHOULD BE VERY POWERFUL, ROBUST, ADVANCED,,,, USE MANY ADVANCED FEATURES AND ENHANCEMENTS,,,, WORK EXTENSIVELY ON UI UX THEME COLOURS FONTS,, SHOULDNT LOOK LIKE AI GENERATED.... SHOULD BE VERY PROFESSIONAL,,,,
+
+I NEED PYTHON CODES ONE BY ONE,,,,ALSO TELL ME THE DIRECTORY AND STRUTURE,,, LIKE WHERE TO COPY PASTE....
+
+USE OPENROUTER AI API KEY FOR ADVANCED AI ANALYSIS,,, EMAIL DRAFTING,, AND A LOT OF MORE ADVANCED FEATURES
+
+WORK EXTENSIVELY,, RESEARCH WELL ON FINDING LOTS OF TENDER SOURCES,,,, 
+
+ALSO ADD A FEATURE WHERE CLICKING ON A FETCHED TENDER SHOWS US WHICH COMPANY CAN SUPPLY THE PRODUCT,, WHICH COMPANY HAS THE PRODICT,,,AND THE PRICE RANGE
+
+USE ONLY THE FOLLOWING SOURCES LINKS:
+# ════════════════════════════════════════════
+# PRIMARY ePROCUREMENT PORTALS
+# ════════════════════════════════════════════
+https://eproc2.bihar.gov.in/
+https://eproc2.bihar.gov.in/EPSV2Web/openarea/tenderListingPage.action
+https://jharkhandtenders.gov.in/
+https://jharkhandtenders.gov.in/nicgep/app?page=WebTenderStatusLists&service=page
+https://gem.gov.in/
+https://eprocure.gov.in/eprocure/app
+https://eprocure.gov.in/
+https://etender.cpwd.gov.in/
+
+# ════════════════════════════════════════════
+# BIHAR STATE DEPARTMENTS & CORPORATIONS
+# ════════════════════════════════════════════
+https://www.buidco.in/ActiveTenders.aspx
+https://www.buidco.in/ArchiveTenders.aspx
+http://bmsicl.gov.in/node/53
+https://shs.bihar.gov.in/Tender
+https://bseidc.in/active_tender.php
+https://rwdbihar.gov.in/
+https://roads.bihar.gov.in/
+https://sbpdcl.co.in/
+https://nbpdcl.co.in/
+https://bsphcl.bih.nic.in/
+https://bstdc.bihar.gov.in/tenders.htm
+https://beltron.bihar.gov.in/
+https://biada.co.in/
+https://phed.bihar.gov.in/
+https://waterresources.bihar.gov.in/
+https://brbn.bihar.gov.in/
+https://bpbcc.in/
+https://brlps.in/
+https://sudha.coop/
+https://patnasmartcity.in/
+https://muzaffarpursmartcity.in/
+https://biharsharifsmc.com/
+https://pmcpatna.in/
+https://bsbccl.bihar.gov.in/New_V/NewTenderDetails.aspx?TenderD=NewTenderDetails.aspx
+https://state.bihar.gov.in/
+https://horticulture.bihar.gov.in/
+https://agri.bihar.gov.in/
+https://swasthyabihar.gov.in/
+https://urban.bihar.gov.in/
+https://educationbihar.gov.in/
+https://socialwelfare.bih.nic.in/
+https://minority.bihar.gov.in/
+https://labour.bihar.gov.in/
+https://forest.bih.nic.in/
+https://transport.bih.nic.in/
+https://excisebihar.gov.in/
+https://firstvigil.bih.nic.in/
+https://wcd.bih.nic.in/
+https://disasterbihar.gov.in/
+
+# ════════════════════════════════════════════
+# BIHAR EDUCATION SPECIFIC
+# ════════════════════════════════════════════
+https://www.bepcssa.in/en/tenders.php
+https://biharboardonline.bihar.gov.in/
+https://bseidc.in/active_tender.php
+https://patnasmartcity.in/
+
+# ════════════════════════════════════════════
+# BIHAR DISTRICT TENDER PORTALS (NIC)
+# ════════════════════════════════════════════
+https://patna.nic.in/notice_category/tenders/
+https://muzaffarpur.nic.in/notice_category/district-tender/
+https://gaya.nic.in/notice_category/tenders/
+https://bhagalpur.nic.in/notice_category/tenders/
+https://darbhanga.nic.in/notice_category/tenders/
+https://vaishali.nic.in/notice_category/tenders/
+https://saran.nic.in/notice_category/tenders/
+https://sitamarhi.nic.in/notice_category/tenders/
+https://siwan.nic.in/notice_category/tenders/
+https://gopalganj.nic.in/notice_category/tenders/
+https://eastchamparan.nic.in/notice_category/tenders/
+https://westchamparan.nic.in/notice_category/tenders/
+https://samastipur.nic.in/notice_category/tenders/
+https://begusarai.nic.in/notice_category/tenders/
+https://munger.nic.in/notice_category/tenders/
+https://jamui.nic.in/notice_category/tenders/
+https://lakhisarai.nic.in/notice_category/tenders/
+https://sheikhpura.nic.in/notice_category/tenders/
+https://nalanda.nic.in/notice_category/tenders/
+https://nawada.nic.in/notice_category/tenders/
+https://aurangabad.bih.nic.in/notice_category/tenders/
+https://gaya.nic.in/notice_category/tenders/
+https://jehanabad.nic.in/notice_category/tenders/
+https://arwal.nic.in/notice_category/tenders/
+https://rohtas.nic.in/notice_category/tenders/
+https://buxar.nic.in/notice_category/tenders/
+https://bhojpur.nic.in/notice_category/tenders/
+https://kaimur.nic.in/notice_category/tenders/
+https://suptam.nic.in/notice_category/tenders/
+https://saharsa.nic.in/notice_category/tenders/
+https://madhepura.nic.in/notice_category/tenders/
+https://supaul.nic.in/notice_category/tenders/
+https://purnia.nic.in/notice_category/tenders/
+https://katihar.nic.in/notice_category/tenders/
+https://araria.nic.in/notice_category/tenders/
+https://kishanganj.nic.in/notice_category/tenders/
+https://madhubani.nic.in/notice_category/tenders/
+https://khagaria.nic.in/notice_category/tenders/
+https://sheohar.nic.in/notice_category/tenders/
+
+# ════════════════════════════════════════════
+# JHARKHAND STATE DEPARTMENTS & CORPORATIONS
+# ════════════════════════════════════════════
+https://jsbccl.jharkhand.gov.in/tenders
+https://jbvnl.co.in/
+https://juvnl.co.in/
+https://juidco.jharkhand.gov.in/
+https://www.jsmdc.in/
+https://jreda.jharkhand.gov.in/
+https://jepc.co.in/
+https://ranchimunicipal.com/
+https://jharkhand.gov.in/
+https://cm.jharkhand.gov.in/
+
+# ════════════════════════════════════════════
+# JHARKHAND DISTRICT TENDER PORTALS (NIC)
+# ════════════════════════════════════════════
+https://ranchi.nic.in/notice_category/tenders/
+https://dhanbad.nic.in/notice_category/tenders/
+https://hazaribag.nic.in/notice_category/tenders/
+https://bokaro.nic.in/notice_category/tenders/
+https://jamshedpur.nic.in/notice_category/tenders/
+https://chaibasa.nic.in/notice_category/tenders/
+https://palamu.nic.in/notice_category/tenders/
+https://seraikela.nic.in/notice_category/tenders/
+https://dumka.nic.in/notice_category/tenders/
+https://giridih.nic.in/notice_category/tenders/
+https://latehar.nic.in/notice_category/tenders/
+https://pakur.nic.in/notice_category/tenders/
+https://sahibganj.nic.in/notice_category/tenders/
+https://simdega.nic.in/notice_category/tenders/
+https://khunti.nic.in/notice_category/tenders/
+https://ramgarh.nic.in/notice_category/tenders/
+https://lohardaga.nic.in/notice_category/tenders/
+https://koderma.nic.in/notice_category/tenders/
+https://deoghar.nic.in/notice_category/tenders/
+https://godda.nic.in/notice_category/tenders/
+https://gumla.nic.in/notice_category/tenders/
+https://chatra.nic.in/notice_category/tenders/
+https://garhwa.nic.in/notice_category/tenders/
+https://jamtara.nic.in/notice_category/tenders/
+
+# ════════════════════════════════════════════
+# INDIAN RAILWAYS
+# ════════════════════════════════════════════
+https://www.ireps.gov.in/
+https://ecr.indianrailways.gov.in/
+https://ser.indianrailways.gov.in/
+https://er.indianrailways.gov.in/
+https://rvnl.org/tenders
+https://www.rites.com/web/index.php/tender
+https://ircon.org/index.php/tender
+https://www.railvikas.gov.in/
+
+# ════════════════════════════════════════════
+# HOSPITALS – BIHAR
+# ════════════════════════════════════════════
+https://aiimspatna.edu.in/tender/
+http://bmsicl.gov.in/node/53
+https://igims.org/
+https://shs.bihar.gov.in/Tender
+https://www.mahavircancersansthan.org/
+https://rmrims.org.in/
+https://esic.in/tenders/
+
+# ════════════════════════════════════════════
+# HOSPITALS – JHARKHAND
+# ════════════════════════════════════════════
+https://www.rims.ac.in/
+https://aiimsdeoghar.edu.in/
+https://esic.in/tenders/
+https://www.sail.co.in/en/tenders
+
+# ════════════════════════════════════════════
+# UNIVERSITIES & COLLEGES – BIHAR
+# ════════════════════════════════════════════
+https://www.iitp.ac.in/index.php/en-us/tenders
+https://www.nitp.ac.in/tenders
+https://iimbg.ac.in/
+https://www.niperhajipur.ac.in/
+https://iiitbh.ac.in/
+https://cusb.ac.in/
+https://nalandauniv.edu.in/
+https://mgcub.ac.in/
+https://rpcau.ac.in/
+https://bausabour.ac.in/
+https://patnauniversity.ac.in/
+https://basu.ac.in/
+https://www.bepcssa.in/en/tenders.php
+
+# ════════════════════════════════════════════
+# UNIVERSITIES & COLLEGES – JHARKHAND
+# ════════════════════════════════════════════
+https://nitjsr.ac.in/
+https://www.iitism.ac.in/index.php/tenders
+https://www.bitmesra.ac.in/
+https://www.ranchiuniversity.ac.in/
+https://www.vbu.ac.in/
+https://www.kolhanuniversity.ac.in/
+https://cuj.ac.in/tenders.php
+https://www.bitsindri.ac.in/
+https://iimranchi.ac.in/
+https://jepc.co.in/
+
+# ════════════════════════════════════════════
+# PSUs – COAL, STEEL, MINING (JHARKHAND/BIHAR)
+# ════════════════════════════════════════════
+https://www.sail.co.in/en/tenders
+https://www.coalindia.in/en-us/tenders.aspx
+https://www.centralcoalfields.in/tenders.aspx
+https://www.bcclweb.in/tenders.html
+https://www.easterncoal.gov.in/
+https://www.meconlimited.co.in/
+https://www.hscl.co.in/
+https://www.hecltd.com/
+https://www.nspcl.co.in/tenders
+https://www.tatasteel.com/suppliers/
+https://www.dvc.gov.in/tenders
+
+# ════════════════════════════════════════════
+# PSUs – POWER, ENERGY, OIL & GAS
+# ════════════════════════════════════════════
+https://ntpctender.ntpc.co.in/
+https://nmdcportals.nmdc.co.in/nmdctender
+https://www.bhel.com/eprocurement/
+https://www.gailonline.com/final_website/pagecontent.php?pageid=tenders
+https://www.seci.co.in/show_tenders.php
+https://iocletenders.nic.in/
+https://iocl.com/purchase-procurement
+https://iocl.com/suppliers-notices
+https://bpcltenders.eproc.in/
+https://tender.ongcindia.com/
+https://hpcltenders.hpcl.co.in/
+
+# ════════════════════════════════════════════
+# PSUs – TELECOM, IT, CONSTRUCTION
+# ════════════════════════════════════════════
+https://tender.bsnl.co.in/
+https://www.tenderwizard.com/BSNL
+http://www.jharkhand.bsnl.co.in/tendersearch.php
+https://bbnl.nic.in/Tenderarchive.aspx
+https://www.nbccindia.com/tenders
+https://www.ircon.org/index.php/tender
+https://www.tcil-india.com/new/tender/
+
+# ════════════════════════════════════════════
+# ROADS, HIGHWAYS & RURAL DEVELOPMENT
+# ════════════════════════════════════════════
+https://www.pmgsytendersbih.gov.in/
+https://www.pmgsytendersbih.gov.in/nicgep/app
+https://rwdbihar.gov.in/
+https://roads.bihar.gov.in/
+https://www.nhai.gov.in/en/tenders
+https://morth.nic.in/
+https://nhidcl.com/tenders/
+
+# ════════════════════════════════════════════
+# URBAN DEVELOPMENT / SMART CITY / MUNICIPAL
+# ════════════════════════════════════════════
+https://www.buidco.in/ActiveTenders.aspx
+https://patnasmartcity.in/
+https://muzaffarpursmartcity.in/
+https://biharsharifsmc.com/
+https://ranchimunicipal.com/
+https://juidco.jharkhand.gov.in/
+https://pmcpatna.in/
+https://smartcities.gov.in/
+
+# ════════════════════════════════════════════
+# DEFENCE / PARAMILITARY / BRO / MES
+# ════════════════════════════════════════════
+https://mes.gov.in/
+https://bro.gov.in/content/tenders
+https://eprocure.gov.in/
+
+# ════════════════════════════════════════════
+# CENTRAL GOVT MINISTRIES & SCHEMES
+# ════════════════════════════════════════════
+https://mohua.gov.in/
+https://jalshakti-dowr.gov.in/tenders
+https://jjm.gov.in/
+https://nhm.gov.in/
+https://mospi.gov.in/tenders
+https://niti.gov.in/
+https://fci.gov.in/app2/tenders.php
+https://www.nabard.org/tenders.aspx
+https://sidbi.in/tenders.aspx
+
+# ════════════════════════════════════════════
+# TENDER AGGREGATOR PORTALS
+# ════════════════════════════════════════════
+https://www.tendersontime.com/india/bihar-tenders/
+https://www.tendersontime.com/india/jharkhand-tenders/
+https://www.tenderdetail.com/State-tenders/bihar-tenders
+https://www.tenderdetail.com/State-tenders/jharkhand-tenders
+https://tendersplus.com/bihar-tenders/active
+https://tendersplus.com/jharkhand-tenders/active
+https://bidassist.com/jharkhand-tenders/active
+https://bidassist.com/bihar-tenders/active
+https://www.tender247.com/state/bihar+tenders
+https://www.tender247.com/state/jharkhand+tenders
+https://www.tendershark.com/tenders/bihar
+https://www.tendershark.com/tenders/jharkhand
+https://www.bihar-tenders.co.in/
+https://www.jharkhandtenders.in/
+https://tenderbihar.com/
+https://www.bihartenders.com/
+https://www.thetenders.com/state-government/bihar-tenders-notice.html
+https://tender18.com/all-india-tenders/state-tenders/bihar-tenders
+https://gemtechparas.com/govt-tenders/jharkhand-tenders
+https://www.tendersinfo.com/
+
