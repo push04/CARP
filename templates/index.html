@@ -644,7 +644,10 @@
                 if (progress >= 90) clearInterval(interval);
             }, 500);
             
-            fetch('/fetch_manual', {method: 'POST'})
+            fetch('/fetch_manual', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
                 .then(function(r) { return r.json(); })
                 .then(function(d) { 
                     clearInterval(interval);
@@ -685,7 +688,10 @@
                 if (progress >= 90) clearInterval(interval);
             }, 200);
             
-            fetch('/cleanup_all', {method: 'POST'})
+            fetch('/cleanup_all', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            })
                 .then(function(r) { return r.json(); })
                 .then(function(d) { 
                     clearInterval(interval);
