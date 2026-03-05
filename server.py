@@ -43,12 +43,11 @@ def get_openai_client():
         return None
     
     try:
+        import httpx
         client = openai.OpenAI(
             api_key=OPENROUTER_API_KEY,
             base_url="https://openrouter.ai/api/v1",
-            http_client=None,
-            proxies=None,
-            timeout=None
+            http_client=httpx.Client(timeout=30.0)
         )
         return client
     except Exception as e:
@@ -442,7 +441,7 @@ def index():
     c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND deadline_date != '' AND deadline_date IS NOT NULL")
     open_count = c.fetchone()[0] or 0
     
-    c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND (location='Bihar' OR state='Bihar')")
+    c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND (location LIKE '%Bihar%' OR state='Bihar')")
     bihar = c.fetchone()[0] or 0
     
     c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND (location='Jharkhand' OR state='Jharkhand')")
@@ -480,75 +479,6 @@ def login():
 def logout():
     session.clear()
     return jsonify({'success': True, 'message': 'Logged out successfully'})
-
-@app.route('/api/tenders')
-def get_tenders():
-    page = int(request.args.get('page', 1))
-    limit = int(request.args.get('limit', 20))
-    search = request.args.get('search', '')
-    category = request.args.get('category', '')
-    
-    conn = sqlite3.connect('instance/tenders.db')
-    c = conn.cursor()
-    
-    query = "SELECT * FROM tenders WHERE status='open'"
-    params = []
-    
-    if search:
-        query += " AND (title LIKE ? OR description LIKE ? OR issuing_authority LIKE ?)"
-        search_param = f"%{search}%"
-        params.extend([search_param, search_param, search_param])
-    
-    if category:
-        query += " AND category LIKE ?"
-        params.append(f"%{category}%")
-    
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-    params.extend([limit, (page - 1) * limit])
-    
-    c.execute(query, params)
-    tenders = c.fetchall()
-    
-    # Get total count for pagination
-    count_query = "SELECT COUNT(*) FROM tenders WHERE status='open'"
-    count_params = []
-    
-    if search:
-        count_query += " AND (title LIKE ? OR description LIKE ? OR issuing_authority LIKE ?)"
-        count_params.extend([search_param, search_param, search_param])
-    
-    if category:
-        count_query += " AND category LIKE ?"
-        count_params.append(f"%{category}%")
-    
-    c.execute(count_query, count_params)
-    total = c.fetchone()[0]
-    
-    conn.close()
-    
-    return jsonify({
-        'tenders': [
-            {
-                'id': t[0],
-                'tender_id': t[1],
-                'title': t[2],
-                'issuing_authority': t[3],
-                'category': t[4],
-                'department': t[5],
-                'publish_date': t[6],
-                'deadline_date': t[7],
-                'source_url': t[8],
-                'description': t[9],
-                'tender_value': t[10],
-                'status': t[11],
-                'source_portal': t[12],
-                'created_at': t[13]
-            } for t in tenders
-        ],
-        'total': total,
-        'page': page,
-        'pages': (total + limit - 1) // limit
-    })
 
 @app.route('/api/scrape_tenders', methods=['POST'])
 @login_required
@@ -1024,7 +954,7 @@ def metrics():
     open_count = c.fetchone()[0] or 0
     
     # Use location OR state field - these are exclusive
-    c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND (location='Bihar' OR state='Bihar')")
+    c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND (location LIKE '%Bihar%' OR state='Bihar')")
     bihar = c.fetchone()[0] or 0
     
     c.execute("SELECT COUNT(*) FROM tenders WHERE status='open' AND (location='Jharkhand' OR state='Jharkhand')")
@@ -1051,47 +981,51 @@ def api_tenders():
     conn = sqlite3.connect('instance/tenders.db')
     c = conn.cursor()
     
-    query = "SELECT * FROM tenders WHERE status='open'"
-    params = []
+    # Build WHERE clause
+    conditions = ["status='open'"]
+    query_params = []
     
     if search:
-        query += " AND (title LIKE ? OR description LIKE ? OR issuing_authority LIKE ?)"
-        search_param = f"%{search}%"
-        params.extend([search_param, search_param, search_param])
+        conditions.append("(title LIKE ? OR description LIKE ? OR issuing_authority LIKE ?)")
+        sp = f"%{search}%"
+        query_params.extend([sp, sp, sp])
     
     if state:
-        query += " AND (location=? OR state=?)"
-        params.extend([state, state])
+        conditions.append("(location LIKE ? OR state LIKE ?)")
+        query_params.extend([f"%{state}%", f"%{state}%"])
     
     if category:
-        query += " AND category LIKE ?"
-        params.append(f"%{category}%")
+        conditions.append("category LIKE ?")
+        query_params.extend([f"%{category}%"])
+    
+    where_clause = " AND ".join(conditions)
+    
+    # Handle sorting - add to conditions and params BEFORE building query
+    if sort == 'medical':
+        conditions.append("(title LIKE ? OR description LIKE ?)")
+        mk = '%'.join(['hospital', 'medical', 'health', 'nursing', 'pharmacy', 'doctor', 'clinical', 'diagnostic', 'treatment', 'patient', 'ambulance', 'medicine', 'drug', 'surgery', 'surgical', 'oxygen', 'vaccine', 'pathology', 'laboratory', 'blood', 'eye', 'dental', 'cardiac', 'cancer', 'dialysis'])
+        query_params.extend([f"%{mk}%", f"%{mk}%"])
+    
+    # Build WHERE clause
+    where_clause = " AND ".join(conditions) if conditions else "1=1"
     
     # Handle sorting
-    if sort == 'medical':
-        medical_keywords = '%'.join(['hospital', 'medical', 'health', 'nursing', 'pharmacy', 'doctor', 'clinical', 'diagnostic', 'treatment', 'patient', 'ambulance', 'medicine', 'drug', 'surgery', 'surgical', 'oxygen', 'vaccine', 'pathology', 'laboratory', 'blood', 'eye', 'dental', 'cardiac', 'cancer', 'dialysis'])
-        query += " AND (title LIKE ? OR description LIKE ?)"
-        params.extend([f"%{medical_keywords}%", f"%{medical_keywords}%"])
-        query += " ORDER BY created_at DESC"
-    elif sort == 'date_desc':
-        query += " ORDER BY created_at DESC"
-    elif sort == 'date_asc':
-        query += " ORDER BY created_at ASC"
+    order_by = "created_at DESC"
+    if sort == 'date_asc':
+        order_by = "created_at ASC"
     elif sort == 'value_desc':
-        query += " ORDER BY tender_value DESC NULLS LAST"
+        order_by = "tender_value DESC"
     elif sort == 'value_asc':
-        query += " ORDER BY tender_value ASC NULLS LAST"
-    else:
-        query += " ORDER BY created_at DESC"
+        order_by = "tender_value ASC"
     
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
-    params.extend([per_page, (page - 1) * per_page])
-    
-    c.execute(query, params)
+    # Build and execute main query
+    query = f"SELECT * FROM tenders WHERE {where_clause} ORDER BY {order_by} LIMIT {per_page} OFFSET {(page-1)*per_page}"
+    c.execute(query, query_params)
     tenders = c.fetchall()
     
-    count_query = "SELECT COUNT(*) FROM tenders WHERE status='open'"
-    c.execute(count_query, [])
+    # Count query
+    count_query = f"SELECT COUNT(*) FROM tenders WHERE {where_clause}"
+    c.execute(count_query, query_params)
     total = c.fetchone()[0]
     
     conn.close()
@@ -1360,11 +1294,11 @@ def export_csv():
     import pandas as pd
     conn = sqlite3.connect('instance/tenders.db')
     c = conn.cursor()
-    c.execute("SELECT * FROM tenders WHERE status='open'")
+    c.execute("SELECT id, tender_id, title, issuing_authority, category, department, location, state, publish_date, deadline_date, source_url, description, tender_value, status FROM tenders WHERE status='open'")
     rows = c.fetchall()
     conn.close()
     
-    df = pd.DataFrame(rows, columns=['id','tender_id','title','issuing_authority','category','department','publish_date','deadline_date','source_url','description','tender_value','status','source_portal','created_at'])
+    df = pd.DataFrame(rows, columns=['id','tender_id','title','issuing_authority','category','department','location','state','publish_date','deadline_date','source_url','description','tender_value','status'])
     
     csv_path = 'tenders_export.csv'
     df.to_csv(csv_path, index=False)
